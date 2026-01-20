@@ -58,6 +58,24 @@
             // State für Cookie Banner
             const [showCookieBanner, setShowCookieBanner] = useState(false);
 
+            // State für Getränke-Akkordeon (welche Kategorien sind offen)
+            const [openDrinkCategories, setOpenDrinkCategories] = useState(['alkoholfrei']);
+
+            // State für tägliche Daten (Tagesgericht, Hinweise, etc.)
+            const [dailyData, setDailyData] = useState({
+                tagesgericht: { gericht1: 'Wurstgulasch', gericht2: 'Jägerschnitzel' },
+                sonderhinweis: { aktiv: false, text: '', typ: 'info' },
+                oeffnungszeiten_override: { aktiv: false, geschlossen: false, von: null, bis: null }
+            });
+
+            const toggleDrinkCategory = (category) => {
+                setOpenDrinkCategories(prev =>
+                    prev.includes(category)
+                        ? prev.filter(c => c !== category)
+                        : [...prev, category]
+                );
+            };
+
             // HIER DEINE BILDER EINTRAGEN:
             // Lege die Bilder in den gleichen Ordner wie diese Datei.
             const images = {
@@ -123,7 +141,45 @@
                     }
                 };
 
+                // 3. Tägliche Daten laden (Tagesgericht, Hinweise, etc.)
+                const fetchDailyData = async () => {
+                    try {
+                        // Erst die Basisdaten laden
+                        const res = await fetch('/api/daily');
+                        const data = await res.json();
+
+                        // Dann das heutige Tagesgericht (aus Wochenplan oder manuell)
+                        const heuteRes = await fetch('/api/daily/heute');
+                        const heuteData = await heuteRes.json();
+
+                        // Tagesgericht aus Wochenplan übernehmen falls vorhanden
+                        if (heuteData.tagesgericht) {
+                            data.tagesgericht = heuteData.tagesgericht;
+                        }
+
+                        setDailyData(data);
+
+                        // Öffnungszeiten-Override berücksichtigen
+                        if (data.oeffnungszeiten_override && data.oeffnungszeiten_override.aktiv) {
+                            if (data.oeffnungszeiten_override.geschlossen) {
+                                setIsOpen(false);
+                            } else if (data.oeffnungszeiten_override.von && data.oeffnungszeiten_override.bis) {
+                                const now = new Date();
+                                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                const [vonH, vonM] = data.oeffnungszeiten_override.von.split(':').map(Number);
+                                const [bisH, bisM] = data.oeffnungszeiten_override.bis.split(':').map(Number);
+                                const vonMinutes = vonH * 60 + vonM;
+                                const bisMinutes = bisH * 60 + bisM;
+                                setIsOpen(currentMinutes >= vonMinutes && currentMinutes < bisMinutes);
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Tägliche Daten konnten nicht geladen werden", error);
+                    }
+                };
+
                 fetchWeather();
+                fetchDailyData();
             }, []);
 
             const acceptCookies = () => {
@@ -142,11 +198,61 @@
                     { name: "Glühwein (0,2l)", price: "3,50 M", realPrice: "3,50 €", desc: "Ohne Schuss. Mit Amaretto oder Rum: 4,50 €", highlight: false, ddrBadge: false },
                 ],
                 summer: [
-                    { name: "Pommes Frites", price: "3,50 €", realPrice: "3,50 €", desc: "Goldgelb & knusprig, rot/weiß", highlight: false },
-                    { name: "Currywurst Spezial", price: "4,50 €", realPrice: "4,50 €", desc: "Mit unserer geheimen Currysauce & Bäckerbrötchen", highlight: true },
-                    { name: "Chicken Nuggets", price: "4,90 €", realPrice: "4,90 €", desc: "6 Stück im Knuspermantel mit Dip", highlight: false },
-                    { name: "Thüringer Bratwurst", price: "3,50 €", realPrice: "3,50 €", desc: "Frisch vom Grill im Brötchen", highlight: false },
-                    { name: "Eiskaffee", price: "4,50 €", realPrice: "4,50 €", desc: "Große Kugel Vanilleeis mit Sahne", highlight: false },
+                    // Speisen
+                    { name: "Hamburger / Chickenburger", price: "6,50 €", realPrice: "6,50 €", desc: "Mit Käse: 7,00 €", highlight: false, category: "speisen" },
+                    { name: "Hamburger XXL", price: "8,00 €", realPrice: "8,00 €", desc: "Mit Käse: 8,50 €", highlight: true, category: "speisen" },
+                    { name: "Pommes Frites", price: "3,50 €", realPrice: "3,50 €", desc: "Goldgelb & knusprig", highlight: false, category: "speisen" },
+                    { name: "Chili-Cheese-Pommes", price: "5,50 €", realPrice: "5,50 €", desc: "Pommes mit Chili und Käsesauce", highlight: false, category: "speisen" },
+                    { name: "Ofenkartoffel", price: "6,50 €", realPrice: "6,50 €", desc: "Mit Kräuterquark", highlight: false, category: "speisen" },
+                    { name: "Chickennuggets", price: "5,00 €", realPrice: "5,00 €", desc: "6 Stück im Knuspermantel", highlight: false, category: "speisen" },
+                    { name: "Hot Dog klassisch", price: "4,00 €", realPrice: "4,00 €", desc: "Im weichen Brötchen", highlight: false, category: "speisen" },
+                    { name: "Currywurst", price: "3,50 €", realPrice: "3,50 €", desc: "Mit hausgemachter Currysauce", highlight: true, category: "speisen" },
+                    { name: "Bratwurst mit Brot", price: "3,50 €", realPrice: "3,50 €", desc: "Frisch vom Grill", highlight: false, category: "speisen" },
+                    { name: "Bockwurst mit Brot", price: "3,00 €", realPrice: "3,00 €", desc: "Klassiker", highlight: false, category: "speisen" },
+                    { name: "Paar Wiener mit Brot", price: "3,00 €", realPrice: "3,00 €", desc: "Zwei Wiener Würstchen", highlight: false, category: "speisen" },
+                ],
+                menus: [
+                    { name: "Cheeseburger Menü", price: "12,00 €", realPrice: "12,00 €", desc: "Burger + Pommes + 0,3L Getränk", highlight: true, category: "menu" },
+                    { name: "Currywurst Menü", price: "8,50 €", realPrice: "8,50 €", desc: "Curry + Pommes + 0,3L Getränk", highlight: false, category: "menu" },
+                    { name: "Hot Dog Klassik Menü", price: "8,50 €", realPrice: "8,50 €", desc: "Hot Dog + Pommes + 0,3L Getränk", highlight: false, category: "menu" },
+                    { name: "Kids Menü", price: "7,50 €", realPrice: "7,50 €", desc: "4 Nuggets + Pommes + Capri Sonne", highlight: false, category: "menu" },
+                ],
+                drinks: [
+                    // Alkoholfrei
+                    { name: "Wasser", price: "2,00 €", realPrice: "2,00 €", desc: "Still/Kohlensäure 0,3L | 0,5L: 3,00 €", highlight: false, category: "alkoholfrei" },
+                    { name: "Cola, Cola Zero, Fanta, Sprite", price: "3,00 €", realPrice: "3,00 €", desc: "0,3L | 0,5L: 3,50 €", highlight: false, category: "alkoholfrei" },
+                    { name: "Saftschorle", price: "3,00 €", realPrice: "3,00 €", desc: "Apfel, Orange, Zitrone 0,3L | 0,5L: 3,50 €", highlight: false, category: "alkoholfrei" },
+                    { name: "Säfte", price: "3,50 €", realPrice: "3,50 €", desc: "Apfel, Orange, Kiba, Zitrone 0,3L | 0,5L: 4,00 €", highlight: false, category: "alkoholfrei" },
+                    { name: "Capri Sonne", price: "1,50 €", realPrice: "1,50 €", desc: "Multi/Orange 0,2L", highlight: false, category: "alkoholfrei" },
+                    { name: "Durstlöscher", price: "1,50 €", realPrice: "1,50 €", desc: "Versch. Sorten 0,5L", highlight: false, category: "alkoholfrei" },
+                    // Kaffee & Tee
+                    { name: "Filterkaffee (Pott)", price: "2,50 €", realPrice: "2,50 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Espresso", price: "2,50 €", realPrice: "2,50 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Caffe Crema", price: "3,00 €", realPrice: "3,00 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Cappuccino", price: "3,50 €", realPrice: "3,50 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Milchkaffee", price: "4,00 €", realPrice: "4,00 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Latte Macchiato", price: "4,50 €", realPrice: "4,50 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Kakao", price: "3,50 €", realPrice: "3,50 €", desc: "", highlight: false, category: "kaffee" },
+                    { name: "Tee", price: "2,50 €", realPrice: "2,50 €", desc: "Versch. Sorten", highlight: false, category: "kaffee" },
+                    // Alkoholisch
+                    { name: "Berliner Weisse", price: "4,50 €", realPrice: "4,50 €", desc: "0,33L", highlight: false, category: "alkohol" },
+                    { name: "Bier", price: "3,50 €", realPrice: "3,50 €", desc: "Versch. Sorten / Alkoholfrei 0,5L", highlight: false, category: "alkohol" },
+                    { name: "Schwarzbier (Porter)", price: "4,50 €", realPrice: "4,50 €", desc: "0,5L", highlight: false, category: "alkohol" },
+                    { name: "Weizenbier", price: "4,50 €", realPrice: "4,50 €", desc: "0,5L", highlight: false, category: "alkohol" },
+                    { name: "Sekt", price: "6,50 €", realPrice: "6,50 €", desc: "Versch. Sorten 0,2L", highlight: false, category: "alkohol" },
+                    { name: "Weißwein", price: "5,50 €", realPrice: "5,50 €", desc: "Versch. Sorten 0,2L", highlight: false, category: "alkohol" },
+                    { name: "Weißweinschorle", price: "5,00 €", realPrice: "5,00 €", desc: "0,2L", highlight: false, category: "alkohol" },
+                    // Longdrinks
+                    { name: "Lillet", price: "7,00 €", realPrice: "7,00 €", desc: "", highlight: false, category: "longdrinks" },
+                    { name: "Aperol Spritz", price: "7,00 €", realPrice: "7,00 €", desc: "", highlight: true, category: "longdrinks" },
+                    { name: "Captain Morgan Cola", price: "7,00 €", realPrice: "7,00 €", desc: "", highlight: false, category: "longdrinks" },
+                    { name: "Havanna Club Cola", price: "7,00 €", realPrice: "7,00 €", desc: "", highlight: false, category: "longdrinks" },
+                    { name: "Weinbrand Cola (Futschi)", price: "7,00 €", realPrice: "7,00 €", desc: "", highlight: false, category: "longdrinks" },
+                    { name: "Wodka Cola", price: "7,00 €", realPrice: "7,00 €", desc: "", highlight: false, category: "longdrinks" },
+                    // Schnäpse
+                    { name: "Pfefferminzlikör", price: "2,50 €", realPrice: "2,50 €", desc: "2cl", highlight: false, category: "schnaps" },
+                    { name: "Obstler", price: "3,00 €", realPrice: "3,00 €", desc: "2cl", highlight: false, category: "schnaps" },
+                    { name: "Ramazzotti", price: "4,50 €", realPrice: "4,50 €", desc: "2cl", highlight: false, category: "schnaps" },
                 ]
             };
 
@@ -204,16 +310,39 @@
                             <Clock className="text-[#E29D2E] w-10 h-10 stroke-1" />
                         </div>
 
-                        {/* Aktion */}
+                        {/* Tagesgericht */}
                         <div className="bg-[#2D5A52] text-white p-6 rounded-lg shadow-lg border-t-4 border-[#E29D2E] flex items-center justify-between relative overflow-hidden hover:-translate-y-1 transition-transform">
                             <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '10px 10px'}}></div>
                             <div className="relative z-10">
-                                <p className="text-[#E29D2E] text-xs font-bold uppercase tracking-wider mb-1 border-b border-[#E29D2E] inline-block pb-0.5">Empfehlung des Tages</p>
-                                <div className="font-bold text-lg leading-tight mt-1 font-serif">Wurstgulasch<br/>Schulküchen-Klassiker</div>
+                                <p className="text-[#E29D2E] text-xs font-bold uppercase tracking-wider mb-1 border-b border-[#E29D2E] inline-block pb-0.5">Tagesgericht</p>
+                                <div className="font-bold text-lg leading-tight mt-1 font-serif">
+                                    {dailyData.tagesgericht.gericht1}
+                                    {dailyData.tagesgericht.gericht2 && <><br/>& {dailyData.tagesgericht.gericht2}</>}
+                                </div>
                             </div>
                             <ChefHat className="text-[#E29D2E] w-10 h-10 stroke-1 relative z-10" />
                         </div>
                     </div>
+
+                    {/* SONDERHINWEIS BANNER */}
+                    {dailyData.sonderhinweis && dailyData.sonderhinweis.aktiv && (
+                        <div className={`mb-8 p-4 rounded-lg flex items-start gap-3 shadow-sm ${
+                            dailyData.sonderhinweis.typ === 'geschlossen'
+                                ? 'bg-red-100 border border-red-300 text-red-800'
+                                : dailyData.sonderhinweis.typ === 'warnung'
+                                    ? 'bg-amber-100 border border-amber-300 text-amber-800'
+                                    : 'bg-sky-100 border border-sky-300 text-sky-800'
+                        }`}>
+                            <Info className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                                dailyData.sonderhinweis.typ === 'geschlossen'
+                                    ? 'text-red-600'
+                                    : dailyData.sonderhinweis.typ === 'warnung'
+                                        ? 'text-amber-600'
+                                        : 'text-sky-600'
+                            }`} />
+                            <p className="text-sm font-medium">{dailyData.sonderhinweis.text}</p>
+                        </div>
+                    )}
 
                     {/* MAIN CONTENT GRID */}
                     <div className="grid lg:grid-cols-12 gap-8">
@@ -227,22 +356,40 @@
                                     Speiseplan
                                 </h2>
 
-                                <div className="bg-stone-200 p-1 rounded-md inline-flex relative shadow-inner">
+                                <div className="bg-stone-200 p-1 rounded-md inline-flex relative shadow-inner flex-wrap">
                                     <button
                                         onClick={() => setActiveTab('winter')}
-                                        className={`px-5 py-2 rounded-sm text-sm font-bold transition-all duration-300 border-2 ${activeTab === 'winter' ? 'bg-[#F4F1EA] border-[#E29D2E] text-[#964B00] shadow-sm' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+                                        className={`px-4 py-2 rounded-sm text-sm font-bold transition-all duration-300 border-2 ${activeTab === 'winter' ? 'bg-[#F4F1EA] border-[#E29D2E] text-[#964B00] shadow-sm' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
                                     >
                                         DDR-Küche
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('summer')}
-                                        className={`px-5 py-2 rounded-sm text-sm font-bold transition-all duration-300 border-2 ${activeTab === 'summer' ? 'bg-white border-sky-400 text-sky-700 shadow-sm' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+                                        className={`px-4 py-2 rounded-sm text-sm font-bold transition-all duration-300 border-2 ${activeTab === 'summer' ? 'bg-white border-sky-400 text-sky-700 shadow-sm' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
                                     >
                                         Sommer-Kiosk
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('drinks')}
+                                        className={`px-4 py-2 rounded-sm text-sm font-bold transition-all duration-300 border-2 ${activeTab === 'drinks' ? 'bg-white border-emerald-500 text-emerald-700 shadow-sm' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+                                    >
+                                        Getränke
                                     </button>
                                 </div>
                             </div>
 
+                            {/* Hinweis für DDR-Küche */}
+                            {activeTab === 'winter' && (
+                                <div className="bg-[#2D5A52]/10 border border-[#2D5A52]/20 rounded-lg p-4 mb-4 flex items-start gap-3">
+                                    <Info className="text-[#2D5A52] w-5 h-5 flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-[#2D5A52]">
+                                        <strong>Hinweis:</strong> Unsere DDR-Gerichte wechseln täglich. Pro Tag gibt es 1-2 Gerichte aus dieser Auswahl. Das aktuelle Tagesgericht findest du oben.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Menu Card für Winter und Sommer */}
+                            {(activeTab === 'winter' || activeTab === 'summer') && (
                             <div className={`rounded-xl shadow-sm border border-stone-200 overflow-hidden relative ${activeTab === 'winter' ? 'bg-[#FAF8F4]' : 'bg-white'}`}>
                                 {activeTab === 'winter' && (
                                     <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
@@ -277,6 +424,132 @@
                                     ))}
                                 </div>
                             </div>
+                            )}
+
+                            {/* Getränkekarte - Akkordeon */}
+                            {activeTab === 'drinks' && (
+                            <div className="space-y-3">
+                                {/* Alkoholfreie Getränke */}
+                                <div className="rounded-xl shadow-sm border border-stone-200 overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => toggleDrinkCategory('alkoholfrei')}
+                                        className="w-full bg-emerald-600 px-5 py-4 text-white font-bold text-sm uppercase tracking-wider flex justify-between items-center hover:bg-emerald-700 transition-colors"
+                                    >
+                                        <span>Alkoholfreie Getränke</span>
+                                        <span className={`transform transition-transform duration-300 ${openDrinkCategories.includes('alkoholfrei') ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+                                    {openDrinkCategories.includes('alkoholfrei') && (
+                                    <div className="divide-y divide-stone-200/50">
+                                        {menuItems.drinks.filter(d => d.category === 'alkoholfrei').map((item, index) => (
+                                            <div key={index} className="p-4 flex justify-between items-center hover:bg-stone-50">
+                                                <div>
+                                                    <h3 className="font-bold text-stone-800">{item.name}</h3>
+                                                    {item.desc && <p className="text-stone-500 text-sm">{item.desc}</p>}
+                                                </div>
+                                                <div className="font-mono font-bold text-emerald-700">{item.realPrice}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    )}
+                                </div>
+
+                                {/* Kaffee & Tee */}
+                                <div className="rounded-xl shadow-sm border border-stone-200 overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => toggleDrinkCategory('kaffee')}
+                                        className="w-full bg-amber-700 px-5 py-4 text-white font-bold text-sm uppercase tracking-wider flex justify-between items-center hover:bg-amber-800 transition-colors"
+                                    >
+                                        <span>Kaffee & Tee</span>
+                                        <span className={`transform transition-transform duration-300 ${openDrinkCategories.includes('kaffee') ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+                                    {openDrinkCategories.includes('kaffee') && (
+                                    <div className="divide-y divide-stone-200/50">
+                                        {menuItems.drinks.filter(d => d.category === 'kaffee').map((item, index) => (
+                                            <div key={index} className="p-4 flex justify-between items-center hover:bg-stone-50">
+                                                <div>
+                                                    <h3 className="font-bold text-stone-800">{item.name}</h3>
+                                                    {item.desc && <p className="text-stone-500 text-sm">{item.desc}</p>}
+                                                </div>
+                                                <div className="font-mono font-bold text-amber-700">{item.realPrice}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    )}
+                                </div>
+
+                                {/* Bier & Wein */}
+                                <div className="rounded-xl shadow-sm border border-stone-200 overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => toggleDrinkCategory('alkohol')}
+                                        className="w-full bg-amber-600 px-5 py-4 text-white font-bold text-sm uppercase tracking-wider flex justify-between items-center hover:bg-amber-700 transition-colors"
+                                    >
+                                        <span>Bier & Wein</span>
+                                        <span className={`transform transition-transform duration-300 ${openDrinkCategories.includes('alkohol') ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+                                    {openDrinkCategories.includes('alkohol') && (
+                                    <div className="divide-y divide-stone-200/50">
+                                        {menuItems.drinks.filter(d => d.category === 'alkohol').map((item, index) => (
+                                            <div key={index} className="p-4 flex justify-between items-center hover:bg-stone-50">
+                                                <div>
+                                                    <h3 className="font-bold text-stone-800">{item.name}</h3>
+                                                    {item.desc && <p className="text-stone-500 text-sm">{item.desc}</p>}
+                                                </div>
+                                                <div className="font-mono font-bold text-amber-600">{item.realPrice}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    )}
+                                </div>
+
+                                {/* Longdrinks */}
+                                <div className="rounded-xl shadow-sm border border-stone-200 overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => toggleDrinkCategory('longdrinks')}
+                                        className="w-full bg-rose-600 px-5 py-4 text-white font-bold text-sm uppercase tracking-wider flex justify-between items-center hover:bg-rose-700 transition-colors"
+                                    >
+                                        <span>Longdrinks</span>
+                                        <span className={`transform transition-transform duration-300 ${openDrinkCategories.includes('longdrinks') ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+                                    {openDrinkCategories.includes('longdrinks') && (
+                                    <div className="divide-y divide-stone-200/50">
+                                        {menuItems.drinks.filter(d => d.category === 'longdrinks').map((item, index) => (
+                                            <div key={index} className={`p-4 flex justify-between items-center hover:bg-stone-50 ${item.highlight ? 'bg-rose-50' : ''}`}>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-bold text-stone-800">{item.name}</h3>
+                                                    {item.highlight && <Star className="text-rose-500 fill-rose-500 w-4 h-4"/>}
+                                                </div>
+                                                <div className="font-mono font-bold text-rose-600">{item.realPrice}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    )}
+                                </div>
+
+                                {/* Schnäpse */}
+                                <div className="rounded-xl shadow-sm border border-stone-200 overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => toggleDrinkCategory('schnaps')}
+                                        className="w-full bg-stone-700 px-5 py-4 text-white font-bold text-sm uppercase tracking-wider flex justify-between items-center hover:bg-stone-800 transition-colors"
+                                    >
+                                        <span>Schnäpse</span>
+                                        <span className={`transform transition-transform duration-300 ${openDrinkCategories.includes('schnaps') ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+                                    {openDrinkCategories.includes('schnaps') && (
+                                    <div className="divide-y divide-stone-200/50">
+                                        {menuItems.drinks.filter(d => d.category === 'schnaps').map((item, index) => (
+                                            <div key={index} className="p-4 flex justify-between items-center hover:bg-stone-50">
+                                                <div>
+                                                    <h3 className="font-bold text-stone-800">{item.name}</h3>
+                                                    {item.desc && <p className="text-stone-500 text-sm">{item.desc}</p>}
+                                                </div>
+                                                <div className="font-mono font-bold text-stone-700">{item.realPrice}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    )}
+                                </div>
+                            </div>
+                            )}
 
                             <div className="bg-[#EBE7DE] rounded-lg p-6 flex flex-col sm:flex-row items-center gap-6 text-stone-700 border border-[#D6D1C4]">
                                 <div className="bg-white p-3 rounded-full shadow-sm text-[#964B00]">

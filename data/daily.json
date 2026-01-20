@@ -1,0 +1,46 @@
+{
+  "tagesgericht": {
+    "gericht1": "Wurstgulasch",
+    "gericht2": "Jägerschnitzel",
+    "updatedAt": "2025-01-20T10:00:00Z"
+  },
+  "sonderhinweis": {
+    "aktiv": false,
+    "text": "",
+    "typ": "info",
+    "updatedAt": null
+  },
+  "oeffnungszeiten_override": {
+    "aktiv": false,
+    "datum": null,
+    "von": null,
+    "bis": null,
+    "geschlossen": false,
+    "updatedAt": null
+  },
+  "wochenplan": {
+    "aktiv": false,
+    "tage": {
+      "dienstag": { "gericht1": "", "gericht2": "" },
+      "mittwoch": { "gericht1": "", "gericht2": "" },
+      "donnerstag": { "gericht1": "", "gericht2": "" },
+      "freitag": { "gericht1": "", "gericht2": "" },
+      "samstag": { "gericht1": "", "gericht2": "" },
+      "sonntag": { "gericht1": "", "gericht2": "" }
+    },
+    "updatedAt": null
+  },
+  "gerichteAuswahl": [
+    "Soljanka",
+    "Wurstgulasch",
+    "Jägerschnitzel",
+    "Tote Oma",
+    "Kesselgulasch",
+    "Senfeier"
+  ],
+  "pendingSelection": {
+    "chatId": null,
+    "gericht1": null,
+    "step": null
+  }
+}

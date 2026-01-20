@@ -1,0 +1,429 @@
+{
+  "name": "Strandstübchen Telegram Bot v2",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message", "callback_query"]
+      },
+      "id": "trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.callback_query }}", "rightValue": "", "operator": { "type": "object", "operation": "exists" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "callback"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.message }}", "rightValue": "", "operator": { "type": "object", "operation": "exists" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "message"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-type",
+      "name": "Check Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const callback = $input.first().json.callback_query;\nconst data = callback.data || '';\nconst chatId = callback.message.chat.id;\nconst messageId = callback.message.message_id;\n\nconst parts = data.split(':');\nconst action = parts[0];\nconst value1 = parts[1] || '';\nconst value2 = parts[2] || '';\n\nreturn [{ json: { chatId, messageId, action, value1, value2, rawData: data } }];"
+      },
+      "id": "parse-callback",
+      "name": "Parse Callback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $input.first().json.message;\nconst text = message.text || '';\nconst chatId = message.chat.id;\n\nlet command = '';\nlet args = '';\n\nif (text.startsWith('/')) {\n  const parts = text.split(' ');\n  command = parts[0].toLowerCase().replace(/@\\w+/, '');\n  args = parts.slice(1).join(' ');\n}\n\nreturn [{ json: { chatId, text, command, args } }];"
+      },
+      "id": "parse-command",
+      "name": "Parse Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/tagesgericht", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "tagesgericht" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/wochenplan", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "wochenplan" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/hinweis", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "hinweis" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/offen", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "offen" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/geschlossen", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "geschlossen" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/status", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "status" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.command }}", "rightValue": "/start", "operator": { "type": "string", "operation": "equals" } }, { "leftValue": "={{ $json.command }}", "rightValue": "/hilfe", "operator": { "type": "string", "operation": "equals" } }], "combinator": "or" }, "renameOutput": true, "outputKey": "hilfe" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cmd-router",
+      "name": "Command Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [660, 400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "g1", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "gericht1" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "g2", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "gericht2" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "kein2", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "kein2" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "wplan", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": true, "outputKey": "wplan" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb-router",
+      "name": "Callback Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "Welches Gericht soll heute angeboten werden?",
+        "additionalFields": {
+          "appendAttribution": false,
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              { "row": { "buttons": [{ "text": "Soljanka", "additionalFields": { "callback_data": "g1:Soljanka" } }, { "text": "Wurstgulasch", "additionalFields": { "callback_data": "g1:Wurstgulasch" } }] } },
+              { "row": { "buttons": [{ "text": "Jaegerschnitzel", "additionalFields": { "callback_data": "g1:Jaegerschnitzel" } }, { "text": "Tote Oma", "additionalFields": { "callback_data": "g1:Tote Oma" } }] } },
+              { "row": { "buttons": [{ "text": "Kesselgulasch", "additionalFields": { "callback_data": "g1:Kesselgulasch" } }, { "text": "Senfeier", "additionalFields": { "callback_data": "g1:Senfeier" } }] } }
+            ]
+          }
+        }
+      },
+      "id": "ask-g1",
+      "name": "Ask Gericht 1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3001/api/daily/selection",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', chatId: $json.chatId, gericht1: $json.value1, step: 'gericht2' }) }}"
+      },
+      "id": "save-g1",
+      "name": "Save Gericht 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Callback').item.json.chatId }}",
+        "text": "Erstes Gericht: {{ $('Parse Callback').item.json.value1 }}\n\nZweites Gericht hinzufuegen?",
+        "additionalFields": {
+          "appendAttribution": false,
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              { "row": { "buttons": [{ "text": "Soljanka", "additionalFields": { "callback_data": "g2:Soljanka" } }, { "text": "Wurstgulasch", "additionalFields": { "callback_data": "g2:Wurstgulasch" } }] } },
+              { "row": { "buttons": [{ "text": "Jaegerschnitzel", "additionalFields": { "callback_data": "g2:Jaegerschnitzel" } }, { "text": "Tote Oma", "additionalFields": { "callback_data": "g2:Tote Oma" } }] } },
+              { "row": { "buttons": [{ "text": "Kesselgulasch", "additionalFields": { "callback_data": "g2:Kesselgulasch" } }, { "text": "Senfeier", "additionalFields": { "callback_data": "g2:Senfeier" } }] } },
+              { "row": { "buttons": [{ "text": "Kein zweites Gericht", "additionalFields": { "callback_data": "kein2:x" } }] } }
+            ]
+          }
+        }
+      },
+      "id": "ask-g2",
+      "name": "Ask Gericht 2",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3001/api/daily/selection"
+      },
+      "id": "get-sel-g2",
+      "name": "Get Selection G2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/tagesgericht",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', gericht1: $json.pendingSelection.gericht1, gericht2: $('Parse Callback').item.json.value1 }) }}"
+      },
+      "id": "set-both",
+      "name": "Set Both Gerichte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 100]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Callback').item.json.chatId }}",
+        "text": "Tagesgericht aktualisiert!\n\n{{ $json.tagesgericht.gericht1 }} & {{ $json.tagesgericht.gericht2 }}"
+      },
+      "id": "reply-both",
+      "name": "Reply Both Done",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1320, 100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3001/api/daily/selection"
+      },
+      "id": "get-sel-kein2",
+      "name": "Get Selection Kein2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/tagesgericht",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', gericht1: $json.pendingSelection.gericht1, gericht2: '' }) }}"
+      },
+      "id": "set-only1",
+      "name": "Set Only Gericht1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Callback').item.json.chatId }}",
+        "text": "Tagesgericht aktualisiert!\n\n{{ $json.tagesgericht.gericht1 }}"
+      },
+      "id": "reply-only1",
+      "name": "Reply Only1 Done",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/wochenplan",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', generieren: true }) }}"
+      },
+      "id": "gen-wplan",
+      "name": "Generate Wochenplan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 500]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "Wochenplan generiert!\n\nDi: {{ $json.wochenplan.tage.dienstag.gericht1 }} & {{ $json.wochenplan.tage.dienstag.gericht2 }}\nMi: {{ $json.wochenplan.tage.mittwoch.gericht1 }} & {{ $json.wochenplan.tage.mittwoch.gericht2 }}\nDo: {{ $json.wochenplan.tage.donnerstag.gericht1 }} & {{ $json.wochenplan.tage.donnerstag.gericht2 }}\nFr: {{ $json.wochenplan.tage.freitag.gericht1 }} & {{ $json.wochenplan.tage.freitag.gericht2 }}\nSa: {{ $json.wochenplan.tage.samstag.gericht1 }} & {{ $json.wochenplan.tage.samstag.gericht2 }}\nSo: {{ $json.wochenplan.tage.sonntag.gericht1 }} & {{ $json.wochenplan.tage.sonntag.gericht2 }}\n\nMit /wochentag [Tag] [Gericht1] & [Gericht2] einzelne Tage aendern."
+      },
+      "id": "reply-wplan",
+      "name": "Reply Wochenplan",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/hinweis",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', aktiv: $json.args.toLowerCase() !== 'aus' && $json.args.toLowerCase() !== 'off', text: $json.args.toLowerCase() === 'aus' || $json.args.toLowerCase() === 'off' ? '' : $json.args, typ: $json.args.toLowerCase().includes('geschlossen') || $json.args.toLowerCase().includes('krankheit') ? 'geschlossen' : 'info' }) }}"
+      },
+      "id": "upd-hinweis",
+      "name": "Update Hinweis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 600]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "={{ $json.success ? ($json.sonderhinweis.aktiv ? 'Hinweis aktiviert: ' + $json.sonderhinweis.text : 'Hinweis deaktiviert') : 'Fehler' }}"
+      },
+      "id": "reply-hinweis",
+      "name": "Reply Hinweis",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/oeffnungszeiten",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', geschlossen: false, von: $json.args.split('-')[0]?.trim() || '11:00', bis: $json.args.split('-')[1]?.trim() || '17:00' }) }}"
+      },
+      "id": "upd-offen",
+      "name": "Update Offen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 700]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "={{ $json.success ? 'Oeffnungszeiten heute: ' + $json.oeffnungszeiten_override.von + ' - ' + $json.oeffnungszeiten_override.bis : 'Fehler' }}"
+      },
+      "id": "reply-offen",
+      "name": "Reply Offen",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/oeffnungszeiten",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', geschlossen: true }) }}"
+      },
+      "id": "upd-geschl",
+      "name": "Update Geschlossen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 800]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "Heute als GESCHLOSSEN markiert."
+      },
+      "id": "reply-geschl",
+      "name": "Reply Geschlossen",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 800]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3001/api/daily"
+      },
+      "id": "get-status",
+      "name": "Get Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 900]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "Status:\n\nTagesgericht: {{ $json.tagesgericht.gericht1 }}{{ $json.tagesgericht.gericht2 ? ' & ' + $json.tagesgericht.gericht2 : '' }}\n\nHinweis: {{ $json.sonderhinweis.aktiv ? $json.sonderhinweis.text : 'Keiner' }}\n\nWochenplan: {{ $json.wochenplan && $json.wochenplan.aktiv ? 'Aktiv' : 'Nicht aktiv' }}"
+      },
+      "id": "reply-status",
+      "name": "Reply Status",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 900]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "Strandstuebchen Admin Bot\n\nBefehle:\n\n/tagesgericht - Tagesgericht mit Buttons waehlen\n/tagesgericht Soljanka & Senfeier - Direkt setzen\n\n/wochenplan - Wochenplan generieren\n\n/hinweis Text hier - Hinweis anzeigen\n/hinweis aus - Hinweis deaktivieren\n\n/offen 12:00-18:00 - Oeffnungszeiten aendern\n/geschlossen - Heute geschlossen\n\n/status - Aktuellen Status anzeigen"
+      },
+      "id": "reply-hilfe",
+      "name": "Reply Hilfe",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [880, 1000]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "leftValue": "={{ $json.args }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "check-args",
+      "name": "Has Args?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [880, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/daily/tagesgericht",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ secret: 'strandstuebchen-geheim-2024', gericht1: $json.args.split('&')[0]?.trim() || $json.args.split(',')[0]?.trim() || $json.args, gericht2: $json.args.split('&')[1]?.trim() || $json.args.split(',')[1]?.trim() || '' }) }}"
+      },
+      "id": "set-direct",
+      "name": "Set Direct",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 350]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Command').item.json.chatId }}",
+        "text": "Tagesgericht: {{ $json.tagesgericht.gericht1 }}{{ $json.tagesgericht.gericht2 ? ' & ' + $json.tagesgericht.gericht2 : '' }}"
+      },
+      "id": "reply-direct",
+      "name": "Reply Direct",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1320, 350]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": { "main": [[{ "node": "Check Type", "type": "main", "index": 0 }]] },
+    "Check Type": { "main": [[{ "node": "Parse Callback", "type": "main", "index": 0 }], [{ "node": "Parse Command", "type": "main", "index": 0 }]] },
+    "Parse Callback": { "main": [[{ "node": "Callback Router", "type": "main", "index": 0 }]] },
+    "Parse Command": { "main": [[{ "node": "Command Router", "type": "main", "index": 0 }]] },
+    "Callback Router": { "main": [[{ "node": "Save Gericht 1", "type": "main", "index": 0 }], [{ "node": "Get Selection G2", "type": "main", "index": 0 }], [{ "node": "Get Selection Kein2", "type": "main", "index": 0 }], []] },
+    "Command Router": { "main": [[{ "node": "Has Args?", "type": "main", "index": 0 }], [{ "node": "Generate Wochenplan", "type": "main", "index": 0 }], [{ "node": "Update Hinweis", "type": "main", "index": 0 }], [{ "node": "Update Offen", "type": "main", "index": 0 }], [{ "node": "Update Geschlossen", "type": "main", "index": 0 }], [{ "node": "Get Status", "type": "main", "index": 0 }], [{ "node": "Reply Hilfe", "type": "main", "index": 0 }]] },
+    "Save Gericht 1": { "main": [[{ "node": "Ask Gericht 2", "type": "main", "index": 0 }]] },
+    "Get Selection G2": { "main": [[{ "node": "Set Both Gerichte", "type": "main", "index": 0 }]] },
+    "Set Both Gerichte": { "main": [[{ "node": "Reply Both Done", "type": "main", "index": 0 }]] },
+    "Get Selection Kein2": { "main": [[{ "node": "Set Only Gericht1", "type": "main", "index": 0 }]] },
+    "Set Only Gericht1": { "main": [[{ "node": "Reply Only1 Done", "type": "main", "index": 0 }]] },
+    "Has Args?": { "main": [[{ "node": "Set Direct", "type": "main", "index": 0 }], [{ "node": "Ask Gericht 1", "type": "main", "index": 0 }]] },
+    "Set Direct": { "main": [[{ "node": "Reply Direct", "type": "main", "index": 0 }]] },
+    "Generate Wochenplan": { "main": [[{ "node": "Reply Wochenplan", "type": "main", "index": 0 }]] },
+    "Update Hinweis": { "main": [[{ "node": "Reply Hinweis", "type": "main", "index": 0 }]] },
+    "Update Offen": { "main": [[{ "node": "Reply Offen", "type": "main", "index": 0 }]] },
+    "Update Geschlossen": { "main": [[{ "node": "Reply Geschlossen", "type": "main", "index": 0 }]] },
+    "Get Status": { "main": [[{ "node": "Reply Status", "type": "main", "index": 0 }]] }
+  }
+}

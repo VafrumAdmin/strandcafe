@@ -3,9 +3,44 @@ const helmet = require('helmet');
 const compression = require('compression');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = 3001;
+
+// JSON Body Parser für POST Requests
+app.use(express.json());
+
+// Secret Key für API-Updates (sollte in .env sein, hier als Beispiel)
+const API_SECRET = process.env.API_SECRET || 'strandstuebchen-geheim-2024';
+
+// Pfad zur daily.json Datei
+const DAILY_DATA_PATH = path.join(__dirname, 'data', 'daily.json');
+
+// Helper: Daily Data lesen
+const readDailyData = () => {
+  try {
+    const data = fs.readFileSync(DAILY_DATA_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // Fallback wenn Datei nicht existiert
+    return {
+      tagesgericht: { gericht1: "Wurstgulasch", gericht2: "Jägerschnitzel", updatedAt: null },
+      sonderhinweis: { aktiv: false, text: "", typ: "info", updatedAt: null },
+      oeffnungszeiten_override: { aktiv: false, datum: null, von: null, bis: null, geschlossen: false, updatedAt: null }
+    };
+  }
+};
+
+// Helper: Daily Data schreiben
+const writeDailyData = (data) => {
+  // Stelle sicher, dass der data Ordner existiert
+  const dataDir = path.dirname(DAILY_DATA_PATH);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  fs.writeFileSync(DAILY_DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
+};
 
 // CORS aktivieren
 app.use(cors());
@@ -115,37 +150,66 @@ const menuData = {
     }
   ],
   summer: [
-    {
-      name: "Pommes Frites",
-      price: "3,50 €",
-      description: "Goldgelb & knusprig, rot/weiß",
-      highlight: false
-    },
-    {
-      name: "Currywurst Spezial",
-      price: "4,50 €",
-      description: "Mit unserer geheimen Currysauce & Bäckerbrötchen",
-      highlight: true
-    },
-    {
-      name: "Chicken Nuggets",
-      price: "4,90 €",
-      description: "6 Stück im Knuspermantel mit Dip",
-      highlight: false
-    },
-    {
-      name: "Thüringer Bratwurst",
-      price: "3,50 €",
-      description: "Frisch vom Grill im Brötchen",
-      highlight: false
-    },
-    {
-      name: "Eiskaffee",
-      price: "4,50 €",
-      description: "Große Kugel Vanilleeis mit Sahne",
-      highlight: false
-    }
-  ]
+    { name: "Hamburger / Chickenburger", price: "6,50 €", description: "Mit Käse: 7,00 €", highlight: false },
+    { name: "Hamburger XXL", price: "8,00 €", description: "Mit Käse: 8,50 €", highlight: true },
+    { name: "Pommes Frites", price: "3,50 €", description: "Goldgelb & knusprig", highlight: false },
+    { name: "Chili-Cheese-Pommes", price: "5,50 €", description: "Pommes mit Chili und Käsesauce", highlight: false },
+    { name: "Ofenkartoffel", price: "6,50 €", description: "Mit Kräuterquark", highlight: false },
+    { name: "Chickennuggets", price: "5,00 €", description: "6 Stück im Knuspermantel", highlight: false },
+    { name: "Hot Dog klassisch", price: "4,00 €", description: "Im weichen Brötchen", highlight: false },
+    { name: "Currywurst", price: "3,50 €", description: "Mit hausgemachter Currysauce", highlight: true },
+    { name: "Bratwurst mit Brot", price: "3,50 €", description: "Frisch vom Grill", highlight: false },
+    { name: "Bockwurst mit Brot", price: "3,00 €", description: "Klassiker", highlight: false },
+    { name: "Paar Wiener mit Brot", price: "3,00 €", description: "Zwei Wiener Würstchen", highlight: false }
+  ],
+  menus: [
+    { name: "Cheeseburger Menü", price: "12,00 €", description: "Burger + Pommes + 0,3L Getränk", highlight: true },
+    { name: "Currywurst Menü", price: "8,50 €", description: "Curry + Pommes + 0,3L Getränk", highlight: false },
+    { name: "Hot Dog Klassik Menü", price: "8,50 €", description: "Hot Dog + Pommes + 0,3L Getränk", highlight: false },
+    { name: "Kids Menü", price: "7,50 €", description: "4 Nuggets + Pommes + Capri Sonne", highlight: false }
+  ],
+  drinks: {
+    alkoholfrei: [
+      { name: "Wasser", price: "2,00 €", description: "Still/Kohlensäure 0,3L | 0,5L: 3,00 €" },
+      { name: "Cola, Cola Zero, Fanta, Sprite", price: "3,00 €", description: "0,3L | 0,5L: 3,50 €" },
+      { name: "Saftschorle", price: "3,00 €", description: "Apfel, Orange, Zitrone 0,3L | 0,5L: 3,50 €" },
+      { name: "Säfte", price: "3,50 €", description: "Apfel, Orange, Kiba, Zitrone 0,3L | 0,5L: 4,00 €" },
+      { name: "Capri Sonne", price: "1,50 €", description: "Multi/Orange 0,2L" },
+      { name: "Durstlöscher", price: "1,50 €", description: "Versch. Sorten 0,5L" }
+    ],
+    kaffee: [
+      { name: "Filterkaffee (Pott)", price: "2,50 €", description: "" },
+      { name: "Espresso", price: "2,50 €", description: "" },
+      { name: "Caffe Crema", price: "3,00 €", description: "" },
+      { name: "Cappuccino", price: "3,50 €", description: "" },
+      { name: "Milchkaffee", price: "4,00 €", description: "" },
+      { name: "Latte Macchiato", price: "4,50 €", description: "" },
+      { name: "Kakao", price: "3,50 €", description: "" },
+      { name: "Tee", price: "2,50 €", description: "Versch. Sorten" }
+    ],
+    alkohol: [
+      { name: "Berliner Weisse", price: "4,50 €", description: "0,33L" },
+      { name: "Bier", price: "3,50 €", description: "Versch. Sorten / Alkoholfrei 0,5L" },
+      { name: "Schwarzbier (Porter)", price: "4,50 €", description: "0,5L" },
+      { name: "Weizenbier", price: "4,50 €", description: "0,5L" },
+      { name: "Sekt", price: "6,50 €", description: "Versch. Sorten 0,2L" },
+      { name: "Weißwein", price: "5,50 €", description: "Versch. Sorten 0,2L" },
+      { name: "Weißweinschorle", price: "5,00 €", description: "0,2L" }
+    ],
+    longdrinks: [
+      { name: "Lillet", price: "7,00 €", description: "" },
+      { name: "Aperol Spritz", price: "7,00 €", description: "" },
+      { name: "Captain Morgan Cola", price: "7,00 €", description: "" },
+      { name: "Havanna Club Cola", price: "7,00 €", description: "" },
+      { name: "Weinbrand Cola (Futschi)", price: "7,00 €", description: "" },
+      { name: "Wodka Cola", price: "7,00 €", description: "" }
+    ],
+    schnaps: [
+      { name: "Pfefferminzlikör", price: "2,50 €", description: "2cl" },
+      { name: "Obstler", price: "3,00 €", description: "2cl" },
+      { name: "Ramazzotti", price: "4,50 €", description: "2cl" }
+    ]
+  }
 };
 
 // Kontakt- und Adressdaten
@@ -254,6 +318,296 @@ app.get('/api/status', (req, res) => {
 // GET /api/info - Kontakt/Adresse
 app.get('/api/info', (req, res) => {
   res.json(infoData);
+});
+
+// ============================================
+// DAILY DATA API (für Telegram Bot / n8n)
+// ============================================
+
+// GET /api/daily - Tägliche Daten (Tagesgericht, Hinweise, Öffnungszeiten-Override)
+app.get('/api/daily', (req, res) => {
+  const dailyData = readDailyData();
+
+  // Prüfe ob Öffnungszeiten-Override für heute gilt
+  if (dailyData.oeffnungszeiten_override.aktiv) {
+    const today = new Date().toISOString().split('T')[0];
+    if (dailyData.oeffnungszeiten_override.datum !== today) {
+      // Override ist abgelaufen, deaktivieren
+      dailyData.oeffnungszeiten_override.aktiv = false;
+      writeDailyData(dailyData);
+    }
+  }
+
+  res.json(dailyData);
+});
+
+// POST /api/daily/tagesgericht - Tagesgericht aktualisieren
+app.post('/api/daily/tagesgericht', (req, res) => {
+  const { secret, gericht1, gericht2 } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+  dailyData.tagesgericht = {
+    gericht1: gericht1 || dailyData.tagesgericht.gericht1,
+    gericht2: gericht2 || '',
+    updatedAt: new Date().toISOString()
+  };
+
+  writeDailyData(dailyData);
+  res.json({ success: true, tagesgericht: dailyData.tagesgericht });
+});
+
+// POST /api/daily/hinweis - Sonderhinweis setzen/deaktivieren
+app.post('/api/daily/hinweis', (req, res) => {
+  const { secret, aktiv, text, typ } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+  dailyData.sonderhinweis = {
+    aktiv: aktiv !== undefined ? aktiv : true,
+    text: text || '',
+    typ: typ || 'info', // 'info', 'warnung', 'geschlossen'
+    updatedAt: new Date().toISOString()
+  };
+
+  writeDailyData(dailyData);
+  res.json({ success: true, sonderhinweis: dailyData.sonderhinweis });
+});
+
+// POST /api/daily/oeffnungszeiten - Öffnungszeiten für einen Tag überschreiben
+app.post('/api/daily/oeffnungszeiten', (req, res) => {
+  const { secret, datum, von, bis, geschlossen } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+
+  // Wenn kein Datum angegeben, nutze heute
+  const targetDatum = datum || new Date().toISOString().split('T')[0];
+
+  dailyData.oeffnungszeiten_override = {
+    aktiv: true,
+    datum: targetDatum,
+    von: geschlossen ? null : (von || '11:00'),
+    bis: geschlossen ? null : (bis || '17:00'),
+    geschlossen: geschlossen || false,
+    updatedAt: new Date().toISOString()
+  };
+
+  writeDailyData(dailyData);
+  res.json({ success: true, oeffnungszeiten_override: dailyData.oeffnungszeiten_override });
+});
+
+// POST /api/daily/reset - Alle täglichen Daten zurücksetzen
+app.post('/api/daily/reset', (req, res) => {
+  const { secret, was } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+
+  if (was === 'hinweis' || was === 'alles') {
+    dailyData.sonderhinweis = { aktiv: false, text: '', typ: 'info', updatedAt: new Date().toISOString() };
+  }
+  if (was === 'oeffnungszeiten' || was === 'alles') {
+    dailyData.oeffnungszeiten_override = { aktiv: false, datum: null, von: null, bis: null, geschlossen: false, updatedAt: new Date().toISOString() };
+  }
+
+  writeDailyData(dailyData);
+  res.json({ success: true, dailyData });
+});
+
+// ============================================
+// WOCHENPLAN API
+// ============================================
+
+// GET /api/daily/gerichte - Liste der verfügbaren Gerichte
+app.get('/api/daily/gerichte', (req, res) => {
+  const dailyData = readDailyData();
+  res.json({
+    gerichte: dailyData.gerichteAuswahl || [
+      "Soljanka", "Wurstgulasch", "Jägerschnitzel",
+      "Tote Oma", "Kesselgulasch", "Senfeier"
+    ]
+  });
+});
+
+// GET /api/daily/wochenplan - Aktuellen Wochenplan abrufen
+app.get('/api/daily/wochenplan', (req, res) => {
+  const dailyData = readDailyData();
+  res.json({
+    wochenplan: dailyData.wochenplan || { aktiv: false, tage: {} }
+  });
+});
+
+// POST /api/daily/wochenplan - Wochenplan setzen oder generieren
+app.post('/api/daily/wochenplan', (req, res) => {
+  const { secret, tage, generieren } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+  const gerichte = dailyData.gerichteAuswahl || [
+    "Soljanka", "Wurstgulasch", "Jägerschnitzel",
+    "Tote Oma", "Kesselgulasch", "Senfeier"
+  ];
+
+  if (generieren) {
+    // Automatisch einen Wochenplan generieren
+    const wochentage = ['dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+    const shuffled = [...gerichte].sort(() => Math.random() - 0.5);
+    const plan = {};
+
+    wochentage.forEach((tag, index) => {
+      // Zwei verschiedene Gerichte pro Tag
+      const idx1 = index % gerichte.length;
+      const idx2 = (index + 1) % gerichte.length;
+      plan[tag] = {
+        gericht1: shuffled[idx1],
+        gericht2: shuffled[idx2] !== shuffled[idx1] ? shuffled[idx2] : shuffled[(idx2 + 1) % gerichte.length]
+      };
+    });
+
+    dailyData.wochenplan = {
+      aktiv: true,
+      tage: plan,
+      updatedAt: new Date().toISOString()
+    };
+  } else if (tage) {
+    // Manuell gesetzten Plan übernehmen
+    dailyData.wochenplan = {
+      aktiv: true,
+      tage: tage,
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  writeDailyData(dailyData);
+  res.json({ success: true, wochenplan: dailyData.wochenplan });
+});
+
+// POST /api/daily/wochenplan/tag - Einen einzelnen Tag im Wochenplan ändern
+app.post('/api/daily/wochenplan/tag', (req, res) => {
+  const { secret, tag, gericht1, gericht2 } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+
+  if (!dailyData.wochenplan) {
+    dailyData.wochenplan = { aktiv: true, tage: {}, updatedAt: null };
+  }
+
+  if (!dailyData.wochenplan.tage) {
+    dailyData.wochenplan.tage = {};
+  }
+
+  dailyData.wochenplan.tage[tag.toLowerCase()] = {
+    gericht1: gericht1 || '',
+    gericht2: gericht2 || ''
+  };
+  dailyData.wochenplan.updatedAt = new Date().toISOString();
+
+  writeDailyData(dailyData);
+  res.json({ success: true, tag, gerichte: dailyData.wochenplan.tage[tag.toLowerCase()] });
+});
+
+// POST /api/daily/wochenplan/deaktivieren - Wochenplan deaktivieren
+app.post('/api/daily/wochenplan/deaktivieren', (req, res) => {
+  const { secret } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+  if (dailyData.wochenplan) {
+    dailyData.wochenplan.aktiv = false;
+    dailyData.wochenplan.updatedAt = new Date().toISOString();
+  }
+
+  writeDailyData(dailyData);
+  res.json({ success: true, message: 'Wochenplan deaktiviert' });
+});
+
+// POST /api/daily/selection - Speichert den aktuellen Auswahlzustand für Telegram-Buttons
+app.post('/api/daily/selection', (req, res) => {
+  const { secret, chatId, gericht1, step } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+  dailyData.pendingSelection = {
+    chatId: chatId || null,
+    gericht1: gericht1 || null,
+    step: step || null
+  };
+
+  writeDailyData(dailyData);
+  res.json({ success: true, pendingSelection: dailyData.pendingSelection });
+});
+
+// GET /api/daily/selection - Holt den aktuellen Auswahlzustand
+app.get('/api/daily/selection', (req, res) => {
+  const dailyData = readDailyData();
+  res.json({
+    pendingSelection: dailyData.pendingSelection || { chatId: null, gericht1: null, step: null }
+  });
+});
+
+// GET /api/daily/heute - Lädt automatisch das Tagesgericht aus dem Wochenplan (falls aktiv)
+app.get('/api/daily/heute', (req, res) => {
+  const dailyData = readDailyData();
+
+  // Prüfe ob Wochenplan aktiv ist
+  if (dailyData.wochenplan && dailyData.wochenplan.aktiv) {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const tagNamen = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
+    const heute = tagNamen[dayOfWeek];
+
+    // Montag ist Ruhetag
+    if (heute === 'montag') {
+      return res.json({
+        ruhetag: true,
+        message: 'Montag ist Ruhetag'
+      });
+    }
+
+    const heuteGerichte = dailyData.wochenplan.tage[heute];
+    if (heuteGerichte && heuteGerichte.gericht1) {
+      // Automatisch das Tagesgericht aus dem Wochenplan laden
+      return res.json({
+        ruhetag: false,
+        tag: heute,
+        tagesgericht: heuteGerichte,
+        quelle: 'wochenplan'
+      });
+    }
+  }
+
+  // Fallback: Manuell gesetztes Tagesgericht
+  res.json({
+    ruhetag: false,
+    tagesgericht: dailyData.tagesgericht,
+    quelle: 'manuell'
+  });
 });
 
 // Fallback: SPA-Routing (alle anderen Routes -> index.html)
