@@ -98,5 +98,12 @@
     "chatId": null,
     "gericht1": null,
     "step": null
+  },
+  "pendingZeiten": {
+    "chatId": null,
+    "typ": null,
+    "tag": null,
+    "vonTag": null,
+    "bisTag": null
   }
 }

@@ -450,7 +450,7 @@ app.get('/api/daily/zeiten', (req, res) => {
 
 // POST /api/daily/zeiten - Öffnungszeiten für einen Tag dauerhaft ändern
 app.post('/api/daily/zeiten', (req, res) => {
-  const { secret, tag, offen, von, bis } = req.body;
+  const { secret, tag, offen, von, bis, grund } = req.body;
 
   if (secret !== API_SECRET) {
     return res.status(401).json({ error: 'Nicht autorisiert' });
@@ -483,7 +483,8 @@ app.post('/api/daily/zeiten', (req, res) => {
   dailyData.oeffnungszeiten[tagLower] = {
     offen: offen !== undefined ? offen : true,
     von: offen === false ? null : (von || "11:00"),
-    bis: offen === false ? null : (bis || "17:00")
+    bis: offen === false ? null : (bis || "17:00"),
+    grund: offen === false ? (grund || null) : null
   };
   dailyData.oeffnungszeiten.updatedAt = new Date().toISOString();
 
@@ -492,6 +493,181 @@ app.post('/api/daily/zeiten', (req, res) => {
     success: true,
     tag: tagLower,
     zeiten: dailyData.oeffnungszeiten[tagLower],
+    oeffnungszeiten: dailyData.oeffnungszeiten
+  });
+});
+
+// POST /api/daily/zeiten/bereich - Öffnungszeiten für mehrere Tage ändern
+app.post('/api/daily/zeiten/bereich', (req, res) => {
+  const { secret, vonTag, bisTag, offen, von, bis, grund } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const validTage = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+  const vonTagLower = vonTag?.toLowerCase();
+  const bisTagLower = bisTag?.toLowerCase();
+
+  if (!vonTagLower || !validTage.includes(vonTagLower)) {
+    return res.status(400).json({ error: 'Ungültiger Start-Tag' });
+  }
+  if (!bisTagLower || !validTage.includes(bisTagLower)) {
+    return res.status(400).json({ error: 'Ungültiger End-Tag' });
+  }
+
+  const dailyData = readDailyData();
+
+  // Initialisiere oeffnungszeiten falls nicht vorhanden
+  if (!dailyData.oeffnungszeiten) {
+    dailyData.oeffnungszeiten = {
+      montag: { offen: false, von: null, bis: null },
+      dienstag: { offen: true, von: "11:00", bis: "17:00" },
+      mittwoch: { offen: true, von: "11:00", bis: "17:00" },
+      donnerstag: { offen: true, von: "11:00", bis: "17:00" },
+      freitag: { offen: true, von: "11:00", bis: "17:00" },
+      samstag: { offen: true, von: "11:00", bis: "17:00" },
+      sonntag: { offen: true, von: "11:00", bis: "17:00" },
+      updatedAt: null
+    };
+  }
+
+  // Finde Start- und End-Index
+  const startIdx = validTage.indexOf(vonTagLower);
+  const endIdx = validTage.indexOf(bisTagLower);
+
+  // Aktualisiere alle Tage im Bereich (auch über Wochenende hinweg)
+  const geaenderteTage = [];
+  let i = startIdx;
+  while (true) {
+    const tag = validTage[i];
+    dailyData.oeffnungszeiten[tag] = {
+      offen: offen !== undefined ? offen : true,
+      von: offen === false ? null : (von || "11:00"),
+      bis: offen === false ? null : (bis || "17:00"),
+      grund: offen === false ? (grund || null) : null
+    };
+    geaenderteTage.push(tag);
+
+    if (i === endIdx) break;
+    i = (i + 1) % 7;
+  }
+
+  dailyData.oeffnungszeiten.updatedAt = new Date().toISOString();
+
+  writeDailyData(dailyData);
+  res.json({
+    success: true,
+    geaenderteTage,
+    oeffnungszeiten: dailyData.oeffnungszeiten
+  });
+});
+
+// POST /api/daily/zeiten/pending - Ausstehende Zeiten-Eingabe speichern
+app.post('/api/daily/zeiten/pending', (req, res) => {
+  const { secret, chatId, typ, tag, vonTag, bisTag } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+  dailyData.pendingZeiten = {
+    chatId: chatId || null,
+    typ: typ || null,
+    tag: tag || null,
+    vonTag: vonTag || null,
+    bisTag: bisTag || null
+  };
+
+  writeDailyData(dailyData);
+  res.json({ success: true, pendingZeiten: dailyData.pendingZeiten });
+});
+
+// GET /api/daily/zeiten/pending - Ausstehende Zeiten-Eingabe abrufen
+app.get('/api/daily/zeiten/pending', (req, res) => {
+  const { chatId } = req.query;
+  const dailyData = readDailyData();
+
+  if (dailyData.pendingZeiten && dailyData.pendingZeiten.chatId == chatId) {
+    res.json({ hasPending: true, pendingZeiten: dailyData.pendingZeiten });
+  } else {
+    res.json({ hasPending: false });
+  }
+});
+
+// POST /api/daily/zeiten/apply - Ausstehende Zeiten-Eingabe anwenden
+app.post('/api/daily/zeiten/apply', (req, res) => {
+  const { secret, chatId, zeiten } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const dailyData = readDailyData();
+
+  if (!dailyData.pendingZeiten || dailyData.pendingZeiten.chatId != chatId) {
+    return res.status(400).json({ error: 'Keine ausstehende Eingabe gefunden' });
+  }
+
+  const pending = dailyData.pendingZeiten;
+  const zeitenMatch = zeiten.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+
+  if (!zeitenMatch) {
+    return res.status(400).json({ error: 'Ungültiges Format. Bitte nutze: 11:00-17:00' });
+  }
+
+  const von = zeitenMatch[1];
+  const bis = zeitenMatch[2];
+
+  // Initialisiere oeffnungszeiten falls nicht vorhanden
+  if (!dailyData.oeffnungszeiten) {
+    dailyData.oeffnungszeiten = {
+      montag: { offen: false, von: null, bis: null },
+      dienstag: { offen: true, von: "11:00", bis: "17:00" },
+      mittwoch: { offen: true, von: "11:00", bis: "17:00" },
+      donnerstag: { offen: true, von: "11:00", bis: "17:00" },
+      freitag: { offen: true, von: "11:00", bis: "17:00" },
+      samstag: { offen: true, von: "11:00", bis: "17:00" },
+      sonntag: { offen: true, von: "11:00", bis: "17:00" },
+      updatedAt: null
+    };
+  }
+
+  const geaenderteTage = [];
+  const validTage = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+
+  if (pending.typ === 'einzel' && pending.tag) {
+    // Einzelner Tag
+    dailyData.oeffnungszeiten[pending.tag] = { offen: true, von, bis, grund: null };
+    geaenderteTage.push(pending.tag);
+  } else if (pending.typ === 'bereich' && pending.vonTag && pending.bisTag) {
+    // Mehrere Tage
+    const startIdx = validTage.indexOf(pending.vonTag);
+    const endIdx = validTage.indexOf(pending.bisTag);
+
+    let i = startIdx;
+    while (true) {
+      const tag = validTage[i];
+      dailyData.oeffnungszeiten[tag] = { offen: true, von, bis, grund: null };
+      geaenderteTage.push(tag);
+
+      if (i === endIdx) break;
+      i = (i + 1) % 7;
+    }
+  }
+
+  dailyData.oeffnungszeiten.updatedAt = new Date().toISOString();
+
+  // Pending löschen
+  dailyData.pendingZeiten = { chatId: null, typ: null, tag: null, vonTag: null, bisTag: null };
+
+  writeDailyData(dailyData);
+  res.json({
+    success: true,
+    geaenderteTage,
+    von,
+    bis,
     oeffnungszeiten: dailyData.oeffnungszeiten
   });
 });
