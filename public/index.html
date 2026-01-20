@@ -65,7 +65,16 @@
             const [dailyData, setDailyData] = useState({
                 tagesgericht: { gericht1: 'Wurstgulasch', gericht2: 'Jägerschnitzel' },
                 sonderhinweis: { aktiv: false, text: '', typ: 'info' },
-                oeffnungszeiten_override: { aktiv: false, geschlossen: false, von: null, bis: null }
+                oeffnungszeiten_override: { aktiv: false, geschlossen: false, von: null, bis: null },
+                oeffnungszeiten: {
+                    montag: { offen: false, von: null, bis: null },
+                    dienstag: { offen: true, von: '11:00', bis: '17:00' },
+                    mittwoch: { offen: true, von: '11:00', bis: '17:00' },
+                    donnerstag: { offen: true, von: '11:00', bis: '17:00' },
+                    freitag: { offen: true, von: '11:00', bis: '17:00' },
+                    samstag: { offen: true, von: '11:00', bis: '17:00' },
+                    sonntag: { offen: true, von: '11:00', bis: '17:00' }
+                }
             });
 
             const toggleDrinkCategory = (category) => {
@@ -90,16 +99,9 @@
                     setShowCookieBanner(true);
                 }
 
-                // 1. Öffnungszeiten Logik
-                const now = new Date();
-                const hour = now.getHours();
-                const day = now.getDay();
-
-                if (day === 1) { // Montag Ruhetag
-                    setIsOpen(false);
-                } else {
-                    setIsOpen(hour >= 11 && hour < 17);
-                }
+                // 1. Öffnungszeiten Logik - wird später durch API-Daten überschrieben
+                // Initial auf geschlossen setzen, bis die Daten geladen sind
+                setIsOpen(false);
 
                 // 2. Wetter & Sonnenaufgang/-untergang API
                 const fetchWeather = async () => {
@@ -159,15 +161,36 @@
 
                         setDailyData(data);
 
-                        // Öffnungszeiten-Override berücksichtigen
+                        // Öffnungszeiten berechnen
+                        const now = new Date();
+                        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                        const tagNamen = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
+                        const heute = tagNamen[now.getDay()];
+
+                        // 1. Prüfe Override (temporär für heute)
                         if (data.oeffnungszeiten_override && data.oeffnungszeiten_override.aktiv) {
                             if (data.oeffnungszeiten_override.geschlossen) {
                                 setIsOpen(false);
+                                return;
                             } else if (data.oeffnungszeiten_override.von && data.oeffnungszeiten_override.bis) {
-                                const now = new Date();
-                                const currentMinutes = now.getHours() * 60 + now.getMinutes();
                                 const [vonH, vonM] = data.oeffnungszeiten_override.von.split(':').map(Number);
                                 const [bisH, bisM] = data.oeffnungszeiten_override.bis.split(':').map(Number);
+                                const vonMinutes = vonH * 60 + vonM;
+                                const bisMinutes = bisH * 60 + bisM;
+                                setIsOpen(currentMinutes >= vonMinutes && currentMinutes < bisMinutes);
+                                return;
+                            }
+                        }
+
+                        // 2. Nutze dauerhafte Öffnungszeiten
+                        const oeffnungszeiten = data.oeffnungszeiten;
+                        if (oeffnungszeiten && oeffnungszeiten[heute]) {
+                            const heuteZeiten = oeffnungszeiten[heute];
+                            if (!heuteZeiten.offen) {
+                                setIsOpen(false);
+                            } else if (heuteZeiten.von && heuteZeiten.bis) {
+                                const [vonH, vonM] = heuteZeiten.von.split(':').map(Number);
+                                const [bisH, bisM] = heuteZeiten.bis.split(':').map(Number);
                                 const vonMinutes = vonH * 60 + vonM;
                                 const bisMinutes = bisH * 60 + bisM;
                                 setIsOpen(currentMinutes >= vonMinutes && currentMinutes < bisMinutes);
@@ -574,15 +597,25 @@
                                 </div>
 
                                 <div className="p-5">
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between border-b border-stone-100 pb-1">
-                                            <span className="text-stone-500">Montag</span>
-                                            <span className="font-bold text-stone-400">Ruhetag</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-stone-500">Di - So</span>
-                                            <span className="font-bold text-[#E29D2E] text-lg">11 - 17 Uhr</span>
-                                        </div>
+                                    <div className="space-y-2 text-sm">
+                                        {dailyData.oeffnungszeiten && ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'].map((tag, idx) => {
+                                            const zeiten = dailyData.oeffnungszeiten[tag];
+                                            const tagKurz = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][idx];
+                                            const now = new Date();
+                                            const istHeute = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'][now.getDay()] === tag;
+                                            return (
+                                                <div key={tag} className={`flex justify-between items-center py-1 ${istHeute ? 'bg-amber-50 -mx-2 px-2 rounded' : ''}`}>
+                                                    <span className={`${istHeute ? 'font-bold text-stone-700' : 'text-stone-500'}`}>{tagKurz}</span>
+                                                    {zeiten && zeiten.offen ? (
+                                                        <span className={`font-bold ${istHeute ? 'text-[#E29D2E]' : 'text-stone-600'}`}>
+                                                            {zeiten.von} - {zeiten.bis}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="font-bold text-stone-400">Ruhetag</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
 
                                         <div className="pt-4 border-t border-stone-100 mt-2">
                                             <span className={`inline-block px-3 py-1 rounded text-xs font-bold uppercase tracking-wider ${isOpen ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>

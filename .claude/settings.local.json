@@ -7,7 +7,14 @@
       "Bash(curl:*)",
       "mcp__n8n__n8n_health_check",
       "mcp__n8n__search_nodes",
-      "mcp__n8n__n8n_delete_workflow"
+      "mcp__n8n__n8n_delete_workflow",
+      "mcp__n8n__n8n_executions",
+      "Bash(pm2 restart:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr /i node:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

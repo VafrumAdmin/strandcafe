@@ -18,15 +18,71 @@
     "geschlossen": false,
     "updatedAt": null
   },
+  "oeffnungszeiten": {
+    "montag": {
+      "offen": false,
+      "von": null,
+      "bis": null
+    },
+    "dienstag": {
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
+    },
+    "mittwoch": {
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
+    },
+    "donnerstag": {
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
+    },
+    "freitag": {
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
+    },
+    "samstag": {
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
+    },
+    "sonntag": {
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
+    },
+    "updatedAt": "2026-01-20T21:40:54.784Z"
+  },
   "wochenplan": {
     "aktiv": false,
     "tage": {
-      "dienstag": { "gericht1": "", "gericht2": "" },
-      "mittwoch": { "gericht1": "", "gericht2": "" },
-      "donnerstag": { "gericht1": "", "gericht2": "" },
-      "freitag": { "gericht1": "", "gericht2": "" },
-      "samstag": { "gericht1": "", "gericht2": "" },
-      "sonntag": { "gericht1": "", "gericht2": "" }
+      "dienstag": {
+        "gericht1": "",
+        "gericht2": ""
+      },
+      "mittwoch": {
+        "gericht1": "",
+        "gericht2": ""
+      },
+      "donnerstag": {
+        "gericht1": "",
+        "gericht2": ""
+      },
+      "freitag": {
+        "gericht1": "",
+        "gericht2": ""
+      },
+      "samstag": {
+        "gericht1": "",
+        "gericht2": ""
+      },
+      "sonntag": {
+        "gericht1": "",
+        "gericht2": ""
+      }
     },
     "updatedAt": null
   },

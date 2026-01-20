@@ -233,15 +233,21 @@ const infoData = {
   website: "https://strandstuebchen-neuemuehle.de"
 };
 
-// Öffnungszeiten Konfiguration
-const openingHours = {
-  monday: null, // Ruhetag
-  tuesday: { open: "11:00", close: "17:00" },
-  wednesday: { open: "11:00", close: "17:00" },
-  thursday: { open: "11:00", close: "17:00" },
-  friday: { open: "11:00", close: "17:00" },
-  saturday: { open: "11:00", close: "17:00" },
-  sunday: { open: "11:00", close: "17:00" }
+// Öffnungszeiten Default-Konfiguration (Fallback)
+const defaultOpeningHours = {
+  montag: { offen: false, von: null, bis: null },
+  dienstag: { offen: true, von: "11:00", bis: "17:00" },
+  mittwoch: { offen: true, von: "11:00", bis: "17:00" },
+  donnerstag: { offen: true, von: "11:00", bis: "17:00" },
+  freitag: { offen: true, von: "11:00", bis: "17:00" },
+  samstag: { offen: true, von: "11:00", bis: "17:00" },
+  sonntag: { offen: true, von: "11:00", bis: "17:00" }
+};
+
+// Helper: Hole aktuelle Öffnungszeiten (aus daily.json oder Default)
+const getOpeningHours = () => {
+  const dailyData = readDailyData();
+  return dailyData.oeffnungszeiten || defaultOpeningHours;
 };
 
 // GET /api/menu - Menü-Daten
@@ -269,26 +275,29 @@ app.get('/api/status', (req, res) => {
   const currentMinute = now.getMinutes();
   const currentTime = currentHour * 60 + currentMinute;
 
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayName = dayNames[dayOfWeek];
-  const todayHours = openingHours[dayName];
+  const tagNamen = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
+  const tagName = tagNamen[dayOfWeek];
+
+  // Hole dynamische Öffnungszeiten aus daily.json
+  const oeffnungszeiten = getOpeningHours();
+  const todayHours = oeffnungszeiten[tagName];
 
   let isOpen = false;
   let nextOpen = null;
   let closesAt = null;
 
-  if (todayHours) {
-    const [openHour, openMin] = todayHours.open.split(':').map(Number);
-    const [closeHour, closeMin] = todayHours.close.split(':').map(Number);
+  if (todayHours && todayHours.offen && todayHours.von && todayHours.bis) {
+    const [openHour, openMin] = todayHours.von.split(':').map(Number);
+    const [closeHour, closeMin] = todayHours.bis.split(':').map(Number);
     const openTime = openHour * 60 + openMin;
     const closeTime = closeHour * 60 + closeMin;
 
     isOpen = currentTime >= openTime && currentTime < closeTime;
 
     if (isOpen) {
-      closesAt = todayHours.close;
+      closesAt = todayHours.bis;
     } else if (currentTime < openTime) {
-      nextOpen = todayHours.open;
+      nextOpen = todayHours.von;
     }
   }
 
@@ -296,22 +305,34 @@ app.get('/api/status', (req, res) => {
   if (!isOpen && !nextOpen) {
     for (let i = 1; i <= 7; i++) {
       const nextDayIndex = (dayOfWeek + i) % 7;
-      const nextDayName = dayNames[nextDayIndex];
-      if (openingHours[nextDayName]) {
-        nextOpen = `${nextDayName === 'sunday' ? 'Sonntag' : nextDayName === 'monday' ? 'Montag' : nextDayName === 'tuesday' ? 'Dienstag' : nextDayName === 'wednesday' ? 'Mittwoch' : nextDayName === 'thursday' ? 'Donnerstag' : nextDayName === 'friday' ? 'Freitag' : 'Samstag'} ${openingHours[nextDayName].open}`;
+      const nextTagName = tagNamen[nextDayIndex];
+      const nextDayHours = oeffnungszeiten[nextTagName];
+      if (nextDayHours && nextDayHours.offen) {
+        const tagDisplay = nextTagName.charAt(0).toUpperCase() + nextTagName.slice(1);
+        nextOpen = `${tagDisplay} ${nextDayHours.von}`;
         break;
       }
     }
   }
 
+  // Konvertiere für API-Response (kompatibel mit altem Format)
+  const openingHoursForApi = {};
+  Object.keys(oeffnungszeiten).forEach(tag => {
+    if (tag !== 'updatedAt') {
+      const dayData = oeffnungszeiten[tag];
+      openingHoursForApi[tag] = dayData.offen ? { open: dayData.von, close: dayData.bis } : null;
+    }
+  });
+
   res.json({
     isOpen,
-    currentDay: dayName,
+    currentDay: tagName,
     currentTime: `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`,
-    todayHours: todayHours ? `${todayHours.open} - ${todayHours.close}` : 'Ruhetag',
+    todayHours: todayHours && todayHours.offen ? `${todayHours.von} - ${todayHours.bis}` : 'Ruhetag',
     closesAt,
     nextOpen,
-    openingHours
+    openingHours: openingHoursForApi,
+    oeffnungszeiten // Neues Format mit allen Details
   });
 });
 
@@ -404,6 +425,75 @@ app.post('/api/daily/oeffnungszeiten', (req, res) => {
 
   writeDailyData(dailyData);
   res.json({ success: true, oeffnungszeiten_override: dailyData.oeffnungszeiten_override });
+});
+
+// ============================================
+// ÖFFNUNGSZEITEN API (dauerhaft)
+// ============================================
+
+// GET /api/daily/zeiten - Alle Öffnungszeiten abrufen
+app.get('/api/daily/zeiten', (req, res) => {
+  const dailyData = readDailyData();
+  const defaultZeiten = {
+    montag: { offen: false, von: null, bis: null },
+    dienstag: { offen: true, von: "11:00", bis: "17:00" },
+    mittwoch: { offen: true, von: "11:00", bis: "17:00" },
+    donnerstag: { offen: true, von: "11:00", bis: "17:00" },
+    freitag: { offen: true, von: "11:00", bis: "17:00" },
+    samstag: { offen: true, von: "11:00", bis: "17:00" },
+    sonntag: { offen: true, von: "11:00", bis: "17:00" }
+  };
+  res.json({
+    oeffnungszeiten: dailyData.oeffnungszeiten || defaultZeiten
+  });
+});
+
+// POST /api/daily/zeiten - Öffnungszeiten für einen Tag dauerhaft ändern
+app.post('/api/daily/zeiten', (req, res) => {
+  const { secret, tag, offen, von, bis } = req.body;
+
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+
+  const validTage = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+  const tagLower = tag?.toLowerCase();
+
+  if (!tagLower || !validTage.includes(tagLower)) {
+    return res.status(400).json({ error: 'Ungültiger Tag. Erlaubt: montag, dienstag, mittwoch, donnerstag, freitag, samstag, sonntag' });
+  }
+
+  const dailyData = readDailyData();
+
+  // Initialisiere oeffnungszeiten falls nicht vorhanden
+  if (!dailyData.oeffnungszeiten) {
+    dailyData.oeffnungszeiten = {
+      montag: { offen: false, von: null, bis: null },
+      dienstag: { offen: true, von: "11:00", bis: "17:00" },
+      mittwoch: { offen: true, von: "11:00", bis: "17:00" },
+      donnerstag: { offen: true, von: "11:00", bis: "17:00" },
+      freitag: { offen: true, von: "11:00", bis: "17:00" },
+      samstag: { offen: true, von: "11:00", bis: "17:00" },
+      sonntag: { offen: true, von: "11:00", bis: "17:00" },
+      updatedAt: null
+    };
+  }
+
+  // Aktualisiere den Tag
+  dailyData.oeffnungszeiten[tagLower] = {
+    offen: offen !== undefined ? offen : true,
+    von: offen === false ? null : (von || "11:00"),
+    bis: offen === false ? null : (bis || "17:00")
+  };
+  dailyData.oeffnungszeiten.updatedAt = new Date().toISOString();
+
+  writeDailyData(dailyData);
+  res.json({
+    success: true,
+    tag: tagLower,
+    zeiten: dailyData.oeffnungszeiten[tagLower],
+    oeffnungszeiten: dailyData.oeffnungszeiten
+  });
 });
 
 // POST /api/daily/reset - Alle täglichen Daten zurücksetzen
