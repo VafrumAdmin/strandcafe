@@ -876,6 +876,17 @@ app.get('/api/daily/heute', (req, res) => {
   });
 });
 
+// Statische HTML-Seiten (Impressum, Datenschutz, Kontakt)
+app.get('/impressum.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'impressum.html'));
+});
+app.get('/datenschutz.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'datenschutz.html'));
+});
+app.get('/kontakt.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'kontakt.html'));
+});
+
 // Fallback: SPA-Routing (alle anderen Routes -> index.html)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
