@@ -50,9 +50,9 @@
       "bis": "17:00"
     },
     "sonntag": {
-      "offen": true,
-      "von": "11:00",
-      "bis": "17:00"
+      "offen": false,
+      "von": null,
+      "bis": null
     },
     "updatedAt": "2026-01-20T21:40:54.784Z"
   },
@@ -104,6 +104,8 @@
     "typ": null,
     "tag": null,
     "vonTag": null,
-    "bisTag": null
+    "bisTag": null,
+    "step": null,
+    "von": null
   }
 }
