@@ -608,10 +608,22 @@
                                             const tagKurz = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][idx];
                                             const now = new Date();
                                             const istHeute = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'][now.getDay()] === tag;
+
+                                            // Prüfe ob Override für heute aktiv ist
+                                            const heuteOverride = istHeute && dailyData.oeffnungszeiten_override && dailyData.oeffnungszeiten_override.aktiv;
+                                            const heuteGeschlossen = heuteOverride && dailyData.oeffnungszeiten_override.geschlossen;
+                                            const heuteSonderzeiten = heuteOverride && !dailyData.oeffnungszeiten_override.geschlossen && dailyData.oeffnungszeiten_override.von;
+
                                             return (
                                                 <div key={tag} className={`flex justify-between items-center py-1 ${istHeute ? 'bg-amber-50 -mx-2 px-2 rounded' : ''}`}>
                                                     <span className={`${istHeute ? 'font-bold text-stone-700' : 'text-stone-500'}`}>{tagKurz}</span>
-                                                    {zeiten && zeiten.offen ? (
+                                                    {heuteGeschlossen ? (
+                                                        <span className="font-bold text-red-500">Geschlossen</span>
+                                                    ) : heuteSonderzeiten ? (
+                                                        <span className={`font-bold ${istHeute ? 'text-[#E29D2E]' : 'text-stone-600'}`}>
+                                                            {dailyData.oeffnungszeiten_override.von} - {dailyData.oeffnungszeiten_override.bis}
+                                                        </span>
+                                                    ) : zeiten && zeiten.offen ? (
                                                         <span className={`font-bold ${istHeute ? 'text-[#E29D2E]' : 'text-stone-600'}`}>
                                                             {zeiten.von} - {zeiten.bis}
                                                         </span>
