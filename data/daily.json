@@ -11,12 +11,12 @@
     "updatedAt": null
   },
   "oeffnungszeiten_override": {
-    "aktiv": false,
-    "datum": null,
+    "aktiv": true,
+    "datum": "2026-01-27",
     "von": null,
     "bis": null,
-    "geschlossen": false,
-    "updatedAt": null
+    "geschlossen": true,
+    "updatedAt": "2026-01-27T10:00:00Z"
   },
   "oeffnungszeiten": {
     "montag": {
@@ -50,9 +50,9 @@
       "bis": "17:00"
     },
     "sonntag": {
-      "offen": false,
-      "von": null,
-      "bis": null
+      "offen": true,
+      "von": "11:00",
+      "bis": "17:00"
     },
     "updatedAt": "2026-01-20T21:40:54.784Z"
   },
