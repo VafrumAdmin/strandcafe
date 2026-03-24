@@ -565,19 +565,24 @@ app.post('/api/daily/zeiten/bereich', (req, res) => {
 
 // POST /api/daily/zeiten/pending - Ausstehende Zeiten-Eingabe speichern
 app.post('/api/daily/zeiten/pending', (req, res) => {
-  const { secret, chatId, typ, tag, vonTag, bisTag } = req.body;
+  const { secret, chatId, typ, tag, vonTag, bisTag, step, von } = req.body;
 
   if (secret !== API_SECRET) {
     return res.status(401).json({ error: 'Nicht autorisiert' });
   }
 
   const dailyData = readDailyData();
+
+  // Bestehende Werte beibehalten wenn nicht übergeben
+  const existing = dailyData.pendingZeiten || {};
   dailyData.pendingZeiten = {
-    chatId: chatId || null,
-    typ: typ || null,
-    tag: tag || null,
-    vonTag: vonTag || null,
-    bisTag: bisTag || null
+    chatId: chatId !== undefined ? chatId : existing.chatId,
+    typ: typ !== undefined ? typ : existing.typ,
+    tag: tag !== undefined ? tag : existing.tag,
+    vonTag: vonTag !== undefined ? vonTag : existing.vonTag,
+    bisTag: bisTag !== undefined ? bisTag : existing.bisTag,
+    step: step !== undefined ? step : existing.step,
+    von: von !== undefined ? von : existing.von
   };
 
   writeDailyData(dailyData);
@@ -660,7 +665,7 @@ app.post('/api/daily/zeiten/apply', (req, res) => {
   dailyData.oeffnungszeiten.updatedAt = new Date().toISOString();
 
   // Pending löschen
-  dailyData.pendingZeiten = { chatId: null, typ: null, tag: null, vonTag: null, bisTag: null };
+  dailyData.pendingZeiten = { chatId: null, typ: null, tag: null, vonTag: null, bisTag: null, step: null, von: null };
 
   writeDailyData(dailyData);
   res.json({
@@ -885,6 +890,11 @@ app.get('/datenschutz.html', (req, res) => {
 });
 app.get('/kontakt.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'kontakt.html'));
+});
+
+// Admin-Bereich
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Fallback: SPA-Routing (alle anderen Routes -> index.html)
