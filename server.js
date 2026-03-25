@@ -892,6 +892,15 @@ app.get('/kontakt.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'kontakt.html'));
 });
 
+// Admin Login-Check (prüft nur das Secret, ändert nichts)
+app.post('/api/admin/login', (req, res) => {
+  const { secret } = req.body;
+  if (secret !== API_SECRET) {
+    return res.status(401).json({ error: 'Nicht autorisiert' });
+  }
+  res.json({ success: true });
+});
+
 // Admin-Bereich
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));

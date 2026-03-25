@@ -146,8 +146,7 @@
     // --- Login ---
     function login() {
         SECRET = document.getElementById('secret-input').value;
-        // Teste den Key mit einem API-Call
-        fetch('/api/daily/tagesgericht', {
+        fetch('/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret: SECRET })
@@ -161,6 +160,11 @@
                 sessionStorage.setItem('admin_secret', SECRET);
                 loadData();
             }
+        }).catch(err => {
+            console.error('Login-Fehler:', err);
+            document.getElementById('login-error').textContent = 'Verbindungsfehler';
+            document.getElementById('login-error').classList.remove('hidden');
+            SECRET = '';
         });
     }
 
