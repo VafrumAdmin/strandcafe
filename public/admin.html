@@ -21,9 +21,8 @@
                 <h1 class="text-2xl font-bold mb-2">Strandstübchen Admin</h1>
                 <p class="text-stone-500 mb-6">Bitte Passwort eingeben</p>
                 <input type="password" id="secret-input" placeholder="Passwort"
-                    class="w-full border border-stone-300 rounded-lg px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A52] mb-4"
-                    onkeydown="if(event.key==='Enter') login()">
-                <button onclick="login()"
+                    class="w-full border border-stone-300 rounded-lg px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A52] mb-4">
+                <button id="btn-login"
                     class="w-full bg-[#2D5A52] text-white font-bold py-3 rounded-lg hover:bg-[#234840] transition">
                     Anmelden
                 </button>
@@ -36,13 +35,13 @@
             <!-- Header -->
             <div class="flex items-center justify-between mb-6 mt-4">
                 <h1 class="text-2xl font-bold">Admin-Bereich</h1>
-                <button onclick="logout()" class="text-stone-500 hover:text-stone-700 text-sm underline">Abmelden</button>
+                <button id="btn-logout" class="text-stone-500 hover:text-stone-700 text-sm underline">Abmelden</button>
             </div>
 
             <!-- Tagesgerichte -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-[#2D5A52] text-white rounded-lg flex items-center justify-center text-sm">🍽</span>
+                    <span class="w-8 h-8 bg-[#2D5A52] text-white rounded-lg flex items-center justify-center text-sm">&#127869;</span>
                     Tagesgerichte
                 </h2>
                 <div class="space-y-4">
@@ -50,7 +49,6 @@
                         <label class="block text-sm font-medium text-stone-600 mb-1">Gericht 1</label>
                         <input type="text" id="gericht1" placeholder="z.B. Wurstgulasch"
                             class="w-full border border-stone-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2D5A52]">
-                        <!-- Schnellauswahl -->
                         <div id="quick-gericht1" class="flex flex-wrap gap-2 mt-2"></div>
                     </div>
                     <div>
@@ -59,7 +57,7 @@
                             class="w-full border border-stone-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2D5A52]">
                         <div id="quick-gericht2" class="flex flex-wrap gap-2 mt-2"></div>
                     </div>
-                    <button onclick="saveTagesgerichte()"
+                    <button id="btn-save-gerichte"
                         class="w-full bg-[#2D5A52] text-white font-bold py-3 rounded-lg hover:bg-[#234840] transition">
                         Tagesgerichte speichern
                     </button>
@@ -70,11 +68,11 @@
             <!-- Öffnungszeiten -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-[#E29D2E] text-white rounded-lg flex items-center justify-center text-sm">🕐</span>
+                    <span class="w-8 h-8 bg-[#E29D2E] text-white rounded-lg flex items-center justify-center text-sm">&#128336;</span>
                     Öffnungszeiten
                 </h2>
                 <div id="zeiten-liste" class="space-y-3"></div>
-                <button onclick="saveOeffnungszeiten()"
+                <button id="btn-save-zeiten"
                     class="w-full bg-[#E29D2E] text-white font-bold py-3 rounded-lg hover:bg-[#c98a25] transition mt-4">
                     Öffnungszeiten speichern
                 </button>
@@ -84,12 +82,12 @@
             <!-- Heute Override -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-sm">⚡</span>
+                    <span class="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-sm">&#9889;</span>
                     Heute Sonderregelung
                 </h2>
                 <p class="text-stone-500 text-sm mb-4">Temporär für heute die Öffnungszeiten ändern oder schließen.</p>
                 <div class="space-y-3">
-                    <button onclick="setHeuteGeschlossen()"
+                    <button id="btn-heute-geschlossen"
                         class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">
                         Heute geschlossen
                     </button>
@@ -98,11 +96,11 @@
                         <span class="self-center text-stone-400">bis</span>
                         <input type="time" id="override-bis" class="flex-1 border border-stone-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-400">
                     </div>
-                    <button onclick="setHeuteZeiten()"
+                    <button id="btn-heute-zeiten"
                         class="w-full bg-stone-600 text-white font-bold py-3 rounded-lg hover:bg-stone-700 transition">
                         Heute andere Zeiten setzen
                     </button>
-                    <button onclick="resetOverride()"
+                    <button id="btn-reset-override"
                         class="w-full border border-stone-300 text-stone-600 font-bold py-3 rounded-lg hover:bg-stone-50 transition">
                         Sonderregelung aufheben
                     </button>
@@ -113,7 +111,7 @@
             <!-- Sonderhinweis -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-sky-500 text-white rounded-lg flex items-center justify-center text-sm">📢</span>
+                    <span class="w-8 h-8 bg-sky-500 text-white rounded-lg flex items-center justify-center text-sm">&#128226;</span>
                     Sonderhinweis
                 </h2>
                 <div class="space-y-3">
@@ -124,11 +122,11 @@
                         <option value="warnung">Warnung (gelb)</option>
                         <option value="geschlossen">Geschlossen (rot)</option>
                     </select>
-                    <button onclick="saveHinweis()"
+                    <button id="btn-save-hinweis"
                         class="w-full bg-sky-600 text-white font-bold py-3 rounded-lg hover:bg-sky-700 transition">
                         Hinweis aktivieren
                     </button>
-                    <button onclick="resetHinweis()"
+                    <button id="btn-reset-hinweis"
                         class="w-full border border-stone-300 text-stone-600 font-bold py-3 rounded-lg hover:bg-stone-50 transition">
                         Hinweis deaktivieren
                     </button>
@@ -143,6 +141,20 @@
     const tageNamen = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
     const tageDisplay = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
+    // --- Event Listener ---
+    document.getElementById('btn-login').addEventListener('click', login);
+    document.getElementById('secret-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') login();
+    });
+    document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-save-gerichte').addEventListener('click', saveTagesgerichte);
+    document.getElementById('btn-save-zeiten').addEventListener('click', saveOeffnungszeiten);
+    document.getElementById('btn-heute-geschlossen').addEventListener('click', setHeuteGeschlossen);
+    document.getElementById('btn-heute-zeiten').addEventListener('click', setHeuteZeiten);
+    document.getElementById('btn-reset-override').addEventListener('click', resetOverride);
+    document.getElementById('btn-save-hinweis').addEventListener('click', saveHinweis);
+    document.getElementById('btn-reset-hinweis').addEventListener('click', resetHinweis);
+
     // --- Login ---
     function login() {
         SECRET = document.getElementById('secret-input').value;
@@ -152,9 +164,9 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret: SECRET })
-        }).then(r => r.json().then(data => ({ status: r.status, data })))
-        .then(({ status, data }) => {
-            if (status === 200 && data.success) {
+        }).then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
+        .then(function(result) {
+            if (result.status === 200 && result.data.success) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 sessionStorage.setItem('admin_secret', SECRET);
@@ -164,9 +176,9 @@
                 document.getElementById('login-error').classList.remove('hidden');
                 SECRET = '';
             }
-        }).catch(err => {
+        }).catch(function(err) {
             console.error('Login-Fehler:', err);
-            document.getElementById('login-error').textContent = 'Verbindungsfehler – Server erreichbar?';
+            document.getElementById('login-error').textContent = 'Verbindungsfehler';
             document.getElementById('login-error').classList.remove('hidden');
             SECRET = '';
         });
@@ -182,7 +194,7 @@
 
     // Auto-Login
     (function() {
-        const saved = sessionStorage.getItem('admin_secret');
+        var saved = sessionStorage.getItem('admin_secret');
         if (saved) {
             SECRET = saved;
             document.getElementById('login-screen').classList.add('hidden');
@@ -194,26 +206,19 @@
     // --- Daten laden ---
     async function loadData() {
         try {
-            const [dailyRes, gerichteRes] = await Promise.all([
-                fetch('/api/daily'),
-                fetch('/api/daily/gerichte')
-            ]);
-            const daily = await dailyRes.json();
-            const gerichte = await gerichteRes.json();
+            var dailyRes = await fetch('/api/daily');
+            var gerichteRes = await fetch('/api/daily/gerichte');
+            var daily = await dailyRes.json();
+            var gerichte = await gerichteRes.json();
 
-            // Tagesgerichte befüllen
-            document.getElementById('gericht1').value = daily.tagesgericht?.gericht1 || '';
-            document.getElementById('gericht2').value = daily.tagesgericht?.gericht2 || '';
+            document.getElementById('gericht1').value = daily.tagesgericht ? daily.tagesgericht.gericht1 || '' : '';
+            document.getElementById('gericht2').value = daily.tagesgericht ? daily.tagesgericht.gericht2 || '' : '';
 
-            // Schnellauswahl-Buttons
             renderQuickSelect('quick-gericht1', gerichte.gerichte, 'gericht1');
             renderQuickSelect('quick-gericht2', gerichte.gerichte, 'gericht2');
-
-            // Öffnungszeiten
             renderOeffnungszeiten(daily.oeffnungszeiten);
 
-            // Override
-            if (daily.oeffnungszeiten_override?.aktiv) {
+            if (daily.oeffnungszeiten_override && daily.oeffnungszeiten_override.aktiv) {
                 if (daily.oeffnungszeiten_override.geschlossen) {
                     showStatus('override-status', 'Heute ist als geschlossen markiert', 'red');
                 } else if (daily.oeffnungszeiten_override.von) {
@@ -223,8 +228,7 @@
                 }
             }
 
-            // Hinweis
-            if (daily.sonderhinweis?.aktiv) {
+            if (daily.sonderhinweis && daily.sonderhinweis.aktiv) {
                 document.getElementById('hinweis-text').value = daily.sonderhinweis.text || '';
                 document.getElementById('hinweis-typ').value = daily.sonderhinweis.typ || 'info';
                 showStatus('hinweis-status', 'Hinweis ist aktiv', 'green');
@@ -235,40 +239,48 @@
     }
 
     function renderQuickSelect(containerId, gerichte, inputId) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = gerichte.map(g =>
-            `<button onclick="document.getElementById('${inputId}').value='${g}'"
-                class="px-3 py-1 text-xs bg-stone-100 hover:bg-[#2D5A52] hover:text-white rounded-full border border-stone-200 transition">${g}</button>`
-        ).join('');
+        var container = document.getElementById(containerId);
+        container.innerHTML = '';
+        gerichte.forEach(function(g) {
+            var btn = document.createElement('button');
+            btn.textContent = g;
+            btn.className = 'px-3 py-1 text-xs bg-stone-100 hover:bg-[#2D5A52] hover:text-white rounded-full border border-stone-200 transition';
+            btn.addEventListener('click', function() {
+                document.getElementById(inputId).value = g;
+            });
+            container.appendChild(btn);
+        });
     }
 
     function renderOeffnungszeiten(zeiten) {
-        const container = document.getElementById('zeiten-liste');
-        container.innerHTML = tageNamen.map((tag, i) => {
-            const z = zeiten?.[tag] || { offen: false, von: null, bis: null };
-            const checked = z.offen ? 'checked' : '';
-            return `
-                <div class="flex items-center gap-3 py-2 border-b border-stone-100 last:border-0">
-                    <label class="w-28 font-medium text-sm">${tageDisplay[i]}</label>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="offen-${tag}" ${checked} onchange="toggleTag('${tag}')"
-                            class="sr-only peer">
-                        <div class="w-9 h-5 bg-stone-300 peer-checked:bg-[#2D5A52] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                    </label>
-                    <div id="zeiten-${tag}" class="${z.offen ? '' : 'opacity-30 pointer-events-none'} flex items-center gap-1 flex-1">
-                        <input type="time" id="von-${tag}" value="${z.von || '11:00'}"
-                            class="border border-stone-300 rounded px-2 py-1.5 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-[#2D5A52]">
-                        <span class="text-stone-400 text-sm">-</span>
-                        <input type="time" id="bis-${tag}" value="${z.bis || '17:00'}"
-                            class="border border-stone-300 rounded px-2 py-1.5 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-[#2D5A52]">
-                    </div>
-                </div>`;
-        }).join('');
+        var container = document.getElementById('zeiten-liste');
+        container.innerHTML = '';
+        tageNamen.forEach(function(tag, i) {
+            var z = (zeiten && zeiten[tag]) ? zeiten[tag] : { offen: false, von: null, bis: null };
+            var div = document.createElement('div');
+            div.className = 'flex items-center gap-3 py-2 border-b border-stone-100 last:border-0';
+            div.innerHTML =
+                '<label class="w-28 font-medium text-sm">' + tageDisplay[i] + '</label>' +
+                '<label class="relative inline-flex items-center cursor-pointer">' +
+                '  <input type="checkbox" id="offen-' + tag + '" ' + (z.offen ? 'checked' : '') + ' class="sr-only peer">' +
+                '  <div class="w-9 h-5 bg-stone-300 peer-checked:bg-[#2D5A52] rounded-full peer peer-checked:after:translate-x-full after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>' +
+                '</label>' +
+                '<div id="zeiten-' + tag + '" class="' + (z.offen ? '' : 'opacity-30 pointer-events-none') + ' flex items-center gap-1 flex-1">' +
+                '  <input type="time" id="von-' + tag + '" value="' + (z.von || '11:00') + '" class="border border-stone-300 rounded px-2 py-1.5 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-[#2D5A52]">' +
+                '  <span class="text-stone-400 text-sm">-</span>' +
+                '  <input type="time" id="bis-' + tag + '" value="' + (z.bis || '17:00') + '" class="border border-stone-300 rounded px-2 py-1.5 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-[#2D5A52]">' +
+                '</div>';
+            container.appendChild(div);
+
+            div.querySelector('#offen-' + tag).addEventListener('change', function() {
+                toggleTag(tag);
+            });
+        });
     }
 
     function toggleTag(tag) {
-        const offen = document.getElementById('offen-' + tag).checked;
-        const zeitenDiv = document.getElementById('zeiten-' + tag);
+        var offen = document.getElementById('offen-' + tag).checked;
+        var zeitenDiv = document.getElementById('zeiten-' + tag);
         if (offen) {
             zeitenDiv.classList.remove('opacity-30', 'pointer-events-none');
         } else {
@@ -278,18 +290,18 @@
 
     // --- Speichern ---
     async function saveTagesgerichte() {
-        const gericht1 = document.getElementById('gericht1').value.trim();
-        const gericht2 = document.getElementById('gericht2').value.trim();
+        var gericht1 = document.getElementById('gericht1').value.trim();
+        var gericht2 = document.getElementById('gericht2').value.trim();
 
         if (!gericht1) {
             showStatus('gerichte-status', 'Bitte mindestens Gericht 1 eingeben', 'red');
             return;
         }
 
-        const res = await fetch('/api/daily/tagesgericht', {
+        var res = await fetch('/api/daily/tagesgericht', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secret: SECRET, gericht1, gericht2 })
+            body: JSON.stringify({ secret: SECRET, gericht1: gericht1, gericht2: gericht2 })
         });
 
         if (res.ok) {
@@ -300,16 +312,17 @@
     }
 
     async function saveOeffnungszeiten() {
-        let success = true;
-        for (const tag of tageNamen) {
-            const offen = document.getElementById('offen-' + tag).checked;
-            const von = document.getElementById('von-' + tag).value;
-            const bis = document.getElementById('bis-' + tag).value;
+        var success = true;
+        for (var t = 0; t < tageNamen.length; t++) {
+            var tag = tageNamen[t];
+            var offen = document.getElementById('offen-' + tag).checked;
+            var von = document.getElementById('von-' + tag).value;
+            var bis = document.getElementById('bis-' + tag).value;
 
-            const res = await fetch('/api/daily/zeiten', {
+            var res = await fetch('/api/daily/zeiten', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ secret: SECRET, tag, offen, von: offen ? von : null, bis: offen ? bis : null })
+                body: JSON.stringify({ secret: SECRET, tag: tag, offen: offen, von: offen ? von : null, bis: offen ? bis : null })
             });
             if (!res.ok) success = false;
         }
@@ -322,7 +335,7 @@
     }
 
     async function setHeuteGeschlossen() {
-        const res = await fetch('/api/daily/oeffnungszeiten', {
+        var res = await fetch('/api/daily/oeffnungszeiten', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret: SECRET, geschlossen: true })
@@ -333,16 +346,16 @@
     }
 
     async function setHeuteZeiten() {
-        const von = document.getElementById('override-von').value;
-        const bis = document.getElementById('override-bis').value;
+        var von = document.getElementById('override-von').value;
+        var bis = document.getElementById('override-bis').value;
         if (!von || !bis) {
             showStatus('override-status', 'Bitte Von und Bis eingeben', 'red');
             return;
         }
-        const res = await fetch('/api/daily/oeffnungszeiten', {
+        var res = await fetch('/api/daily/oeffnungszeiten', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secret: SECRET, von, bis })
+            body: JSON.stringify({ secret: SECRET, von: von, bis: bis })
         });
         if (res.ok) {
             showStatus('override-status', 'Sonderzeiten gesetzt: ' + von + ' - ' + bis, 'amber');
@@ -350,7 +363,7 @@
     }
 
     async function resetOverride() {
-        const res = await fetch('/api/daily/reset', {
+        var res = await fetch('/api/daily/reset', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret: SECRET, was: 'oeffnungszeiten' })
@@ -363,16 +376,16 @@
     }
 
     async function saveHinweis() {
-        const text = document.getElementById('hinweis-text').value.trim();
-        const typ = document.getElementById('hinweis-typ').value;
+        var text = document.getElementById('hinweis-text').value.trim();
+        var typ = document.getElementById('hinweis-typ').value;
         if (!text) {
             showStatus('hinweis-status', 'Bitte Text eingeben', 'red');
             return;
         }
-        const res = await fetch('/api/daily/hinweis', {
+        var res = await fetch('/api/daily/hinweis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secret: SECRET, aktiv: true, text, typ })
+            body: JSON.stringify({ secret: SECRET, aktiv: true, text: text, typ: typ })
         });
         if (res.ok) {
             showStatus('hinweis-status', 'Hinweis aktiviert!', 'green');
@@ -380,7 +393,7 @@
     }
 
     async function resetHinweis() {
-        const res = await fetch('/api/daily/hinweis', {
+        var res = await fetch('/api/daily/hinweis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret: SECRET, aktiv: false, text: '', typ: 'info' })
@@ -391,14 +404,13 @@
         }
     }
 
-    // --- Hilfsfunktionen ---
     function showStatus(id, text, color) {
-        const el = document.getElementById(id);
+        var el = document.getElementById(id);
         el.classList.remove('hidden', 'text-green-600', 'text-red-600', 'text-amber-600');
-        const colorClass = color === 'green' ? 'text-green-600' : color === 'red' ? 'text-red-600' : 'text-amber-600';
+        var colorClass = color === 'green' ? 'text-green-600' : color === 'red' ? 'text-red-600' : 'text-amber-600';
         el.classList.add(colorClass);
         el.textContent = text;
-        setTimeout(() => el.classList.add('hidden'), 5000);
+        setTimeout(function() { el.classList.add('hidden'); }, 5000);
     }
 </script>
 </body>
