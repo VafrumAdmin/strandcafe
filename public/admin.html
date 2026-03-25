@@ -146,23 +146,27 @@
     // --- Login ---
     function login() {
         SECRET = document.getElementById('secret-input').value;
+        document.getElementById('login-error').classList.add('hidden');
+
         fetch('/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secret: SECRET })
-        }).then(r => {
-            if (r.status === 401) {
-                document.getElementById('login-error').classList.remove('hidden');
-                SECRET = '';
-            } else {
+        }).then(r => r.json().then(data => ({ status: r.status, data })))
+        .then(({ status, data }) => {
+            if (status === 200 && data.success) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 sessionStorage.setItem('admin_secret', SECRET);
                 loadData();
+            } else {
+                document.getElementById('login-error').textContent = 'Falsches Passwort';
+                document.getElementById('login-error').classList.remove('hidden');
+                SECRET = '';
             }
         }).catch(err => {
             console.error('Login-Fehler:', err);
-            document.getElementById('login-error').textContent = 'Verbindungsfehler';
+            document.getElementById('login-error').textContent = 'Verbindungsfehler – Server erreichbar?';
             document.getElementById('login-error').classList.remove('hidden');
             SECRET = '';
         });
